@@ -70,7 +70,7 @@ declare -A apps
 apps=(
     # ... (populate with your apps as shown before)
     ["AMAZON-LUNA"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/amazonluna/amazonluna.sh | bash"
-    ["ARCADEMANAGER"]="curl -Ls https://github.com/DTJW92/batocera.pro/edit/main/whatsapp/arcademanager.sh | bash"
+    ["ARCADEMANAGER"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/arcademanager/arcademanager.sh | bash"
     ["APPIMAGE-PARSER"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/appimage/install.sh | bash"
     ["GAME-MANAGER"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/gamelist-manager/gamelist-manager.sh | bash"
     ["GEFORCENOW"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/geforcenow/geforcenow.sh | bash"
@@ -82,7 +82,7 @@ apps=(
     ["SWITCH"]="curl -Ls bit.ly/foclabroc-switchoff-40 | bash"
     ["YOUTUBE-MUSIC"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/youtube-music/ytm.sh | bash" 
     ["YOUTUBE-TV"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/youtubetv/yttv.sh | bash"
-
+    ["SUNSHINE"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/sunshine/installer.sh | bash"
     # Add other apps here
 )
 
