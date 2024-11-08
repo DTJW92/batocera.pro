@@ -249,7 +249,7 @@ echo -e "${G}DOWNLOADING${W} $APPNAME . . ."
 sleep 1
 echo -e "${T}$APPLINK" | sed 's,https://,> ,g' | sed 's,http://,> ,g' 2>/dev/null
 cd $temp
-curl --progress-bar -L -o "$temp/youtube-music.sh" "$APPLINK"
+curl --progress-bar -L -o "$temp/youtube-music.AppImage" "$APPLINK"
 cd ~/
 mv $temp/* $APPPATH 2>/dev/null
 chmod a+x $APPPATH 2>/dev/null
