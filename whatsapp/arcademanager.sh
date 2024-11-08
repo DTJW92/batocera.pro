@@ -5,12 +5,12 @@
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
-APPNAME="WHATSAPP" # for installer info
-appname=whatsapp # directory name in /userdata/system/pro/...
-AppName=Whatsapp # App.AppImage name
+APPNAME="ARCADEMANAGER" # for installer info
+appname=arcademanager # directory name in /userdata/system/pro/...
+AppName=ArcadeManager # App.AppImage name
 APPPATH=/userdata/system/pro/$appname/$AppName.AppImage
-APPLINK=http://batocera.pro/app/whatsapp.AppImage
-ORIGIN="APPREPO.DE/APPIMAGE/WHATSAPP" # credit & info
+APPLINK="$(curl -s https://api.github.com/repos/cosmo0/arcade-manager/releases/latest | jq -r ".assets[] | select(.name | endswith(\".AppImage\")) | .browser_download_url" | grep eta)"
+ORIGIN="github.com/cosmo0/arcade-manager" # credit & info
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
@@ -287,7 +287,7 @@ chmod a+x $launcher
 # //
 # -- get icon for shortcut,
 icon=/userdata/system/pro/$appname/extra/icon.png
-wget -q -O $icon https://github.com/uureel/batocera.pro/raw/main/$appname/extra/icon.png
+wget -q -O $icon https://github.com/DTJW92/batocera.pro/raw/main/$appname/extra/icon.png
 # //
 # -- prepare f1 - applications - app shortcut, 
 shortcut=/userdata/system/pro/$appname/extra/$appname.desktop
