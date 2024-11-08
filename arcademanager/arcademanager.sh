@@ -9,7 +9,7 @@ APPNAME="ARCADEMANAGER" # for installer info
 appname=arcademanager # directory name in /userdata/system/pro/...
 AppName=ArcadeManager # App.AppImage name
 APPPATH=/userdata/system/pro/$appname/$AppName.AppImage
-APPLINK="$(curl -s https://api.github.com/repos/cosmo0/arcade-manager/releases/latest | jq -r ".assets[] | select(.name | endswith(\".AppImage\")) | .browser_download_url")"
+APPLINK="$(curl -s https://api.github.com/repos/cosmo0/arcade-manager/releases/latest | jq -r ".assets[] | select(.name | endswith(\"x64.AppImage\")) | .browser_download_url")"
 ORIGIN="github.com/cosmo0/arcade-manager" # credit & info
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
