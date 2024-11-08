@@ -70,9 +70,11 @@ declare -A apps
 apps=(
     # ... (populate with your apps as shown before)
     ["AMAZON-LUNA"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/amazonluna/amazonluna.sh | bash"
+    ["ARCADEMANAGER"]="curl -Ls https://github.com/DTJW92/batocera.pro/edit/main/whatsapp/arcademanager.sh | bash"
     ["APPIMAGE-PARSER"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/appimage/install.sh | bash"
     ["GAME-MANAGER"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/gamelist-manager/gamelist-manager.sh | bash"
     ["GEFORCENOW"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/geforcenow/geforcenow.sh | bash"
+    ["MYRETROTV"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/myretrotv/myretrotv.sh | bash"
     ["NETFLIX"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/netflix/netflix.sh | bash"
     ["POKEMMO"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/pokemmo/pokemmo.sh | bash"
     ["PS3PLUS"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/ps3plus/installer.sh | bash"
