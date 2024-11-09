@@ -84,6 +84,7 @@ apps=(
     ["YOUTUBE-TV"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/youtubetv/yttv.sh | bash"
     ["SUNSHINE"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/sunshine/installer.sh | bash"
     ["JAVA"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/java/java.sh | bash"
+    ["BALENA"]="curl -Ls https://github.com/DTJW92/batocera.pro/raw/main/balena/balena.sh | bash"
     # Add other apps here
 )
 
