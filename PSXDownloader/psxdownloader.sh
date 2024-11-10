@@ -56,33 +56,31 @@ loading_animation() {
     trap "kill $spinner_pid 2>/dev/null" EXIT  # Ensure the spinner stops when script exits
 }
 
-url_decode() {
-    echo -e "$(echo "$1" | sed 's/%20/ /g')"
-}
-
-# Fetch list of game files and their display names from the URL
+# Fetch list of game files and display names from the URL
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
 raw_list=$(curl -s "$url")
 
-# Parse file names and display names
-game_list=($(echo "$raw_list" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
-display_names=($(echo "$raw_list" | grep -oP '>[^<]+</a>' | sed 's/[<>/]//g'))
+# Parse file URLs and display names together
+declare -A games
+while read -r line; do
+    # Extract the URL and display text for each .chd link
+    file_url=$(echo "$line" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$")
+    display_text=$(echo "$line" | grep -oP '>([^<]+)</a>' | sed 's/[<>/]//g')
+    if [[ -n $file_url && -n $display_text ]]; then
+        games["$display_text"]="$url$file_url"
+    fi
+done <<< "$(echo "$raw_list" | grep -E 'href="[^"]*\.chd"')"
 
-if [ ${#game_list[@]} -eq 0 ]; then
+# Check if we found any games
+if [ ${#games[@]} -eq 0 ]; then
     echo "No games found at $url"
     exit 1
 fi
 
-# Prepare arrays for dialog checklist, mapping display names to game URLs
-declare -A games
-for i in "${!game_list[@]}"; do
-    games["${display_names[$i]}"]="curl -Ls $url${game_list[$i]} -o /userdata/roms/psx/${game_list[$i]}"
-done
-
 # Prepare dialog checklist items
 game_choices=()
-for display_name in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$display_name" "" OFF)
+for display_text in "${!games[@]}"; do
+    game_choices+=("$display_text" "" OFF)
 done
 
 # Show dialog checklist for game selection
@@ -96,18 +94,18 @@ if [ $? -eq 1 ]; then
 fi
 
 # Install selected games using display name mapping
-for display_name in $selected_games; do
-    game_url="${games[$display_name]}"
-    echo "Downloading $display_name..."
+for display_text in $selected_games; do
+    game_url="${games[$display_text]}"
+    echo "Downloading $display_text..."
     wget --show-progress --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
     if [[ -s "/tmp/.game" ]]; then 
         chmod 777 /tmp/.game 2>/dev/null
         mv /tmp/.game /userdata/roms/psx/
         clear
         loading_animation
-        echo -e "\n\n$display_name installation complete.\n\n"
+        echo -e "\n\n$display_text installation complete.\n\n"
     else 
-        echo "Error: couldn't download $display_name"
+        echo "Error: couldn't download game $display_text"
     fi
 done
 
