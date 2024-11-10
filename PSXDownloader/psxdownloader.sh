@@ -1,7 +1,7 @@
 #!/bin/bash
 
 clear
-dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
 clear
 
 # Function to display animated title with colors
@@ -57,13 +57,20 @@ loading_animation() {
     kill $spinner_pid
     echo "Done!"
 }
+
+# URL decode function to handle spaces in filenames
 url_decode() {
     echo -e "$(echo "$1" | sed 's/%20/ /g')"
 }
 
+# Animated title and controls
+animate_title
+animate_border
+display_controls
+
 # Fetch list of game files from the URL and create a checklist
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
-game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+game_list=($(curl -s "$url" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
 
 if [ ${#game_list[@]} -eq 0 ]; then
     echo "No games found at $url"
@@ -73,8 +80,7 @@ fi
 # Prepare array for dialog command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
-    games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
-    
+    games["$game"]="curl -Ls ${url}${game} -o /userdata/roms/psx/${game}"
 done
 
 # Prepare array for dialog checklist
@@ -93,24 +99,26 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
-# Install selected games
+# Install selected games with progress tracking
 for game in $selected_games; do
-    game_url="${games[$game]}"
-    rm /tmp/.game 2>/dev/null
+    game_url="${url}${game}"
+    output_file="/userdata/roms/psx/${game}"
+    
     echo "Downloading $game..."
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
-    if [[ -s "/tmp/.game" ]]; then 
-        chmod 777 /tmp/.game 2>/dev/null
-        mv /tmp/.game /userdata/roms/psx/
-        clear
+    
+    wget --show-progress --progress=bar:force -O "$output_file" "$game_url"
+    
+    if [[ -s "$output_file" ]]; then 
+        chmod 777 "$output_file" 2>/dev/null
         loading_animation
         echo -e "\n\n$game installation complete.\n\n"
     else 
         echo "Error: couldn't download game $game"
+        rm -f "$output_file"  # Clean up partially downloaded file
     fi
 done
 
 # Reload ES after installations
-curl http://127.0.0.1:1234/reloadgames
+curl -s http://127.0.0.1:1234/reloadgames
 
 echo "Exiting."
