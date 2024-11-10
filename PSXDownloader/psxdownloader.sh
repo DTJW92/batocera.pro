@@ -77,15 +77,18 @@ if [ ${#games[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Prepare dialog checklist items, sorted alphabetically
+# Prepare dialog checklist items and sort them alphabetically
 game_choices=()
-for display_text in $(echo "${!games[@]}" | sort); do
+for display_text in "${!games[@]}"; do
     game_choices+=("$display_text" "" OFF)
 done
 
+# Sort the array alphabetically
+sorted_game_choices=($(for game in "${game_choices[@]}"; do echo "$game"; done | sort))
+
 # Show dialog checklist for game selection
 cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
-selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
+selected_games=$("${cmd[@]}" "${sorted_game_choices[@]}" 2>&1 >/dev/tty)
 
 # Check if Cancel was pressed
 if [ $? -eq 1 ]; then
