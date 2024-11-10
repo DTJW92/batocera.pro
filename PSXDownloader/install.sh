@@ -11,7 +11,7 @@ fi
 
 # Function to display animated title
 animate_title() {
-    local text="BATOCERA PSX DOWNLOADER INSTALLER"
+    local text="BATOCERA PSX CHD INSTALLER"
     local delay=0.1
     local length=${#text}
 
@@ -25,7 +25,7 @@ animate_title() {
 # Function to display controls
 display_controls() {
     echo 
-    echo "  This Will install PSX Downloader to Ports"
+    echo "  This Will install Batocera PSX CHD Installer to Ports"
     echo    
     sleep 5  # Delay for 5 seconds
 }
@@ -35,24 +35,33 @@ clear
 animate_title
 display_controls
 
-# Check if /userdata/system/psxdownloader does not exist and create it if necessary
-if [ ! -d "/userdata/system/psxdownloader" ]; then
-    mkdir -p /userdata/system/psxdownloader
+
+
+
+# Check if /userdata/system/pro does not exist and create it if necessary
+if [ ! -d "/userdata/system/pro" ]; then
+    mkdir -p /userdata/system/pro
 fi
 
-# Download PSXDownloader.sh to /userdata/system/psxdownloader
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/system/psxdownloader/PSXDownloader.sh
+# Download pro.sh to /userdata/system/pro
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/pro/pro.sh
 
-# Download PSXDownloader.sh.keys to /userdata/roms/ports
-wget https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -P /userdata/roms/ports/
+# Download BatoceraPRO.sh to /userdata/roms/ports
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/ports/BatoceraPRO.sh
+
+# Download BatoceraPRO.sh.keys to /userdata/roms/ports
+wget  https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -P /userdata/roms/ports/
 
 # Set execute permissions for the downloaded scripts
-chmod +x /userdata/system/psxdownloader/PSXDownloader.sh
+chmod +x /userdata/system/pro/psxdownloader.sh
+chmod +x /userdata/roms/ports/PSXDownloader.sh
+
 
 # killall -9 emulationstation
 
-sleep 1
+sleep 
 
 mv /userdata/roms/ports/bkeys.txt /userdata/roms/ports/PSXDownloader.sh.keys
 
-echo "Finished. You should see PSXDownloader in Ports."
+
+echo "Finished.  You should see PSXDownloader in Ports"
