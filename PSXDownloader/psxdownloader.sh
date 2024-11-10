@@ -111,6 +111,13 @@ while true; do
         wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
         wget_exit_code=$?
 
+            # If no new games were downloaded, prompt to retry
+    if [ "$any_downloaded" = false ]; then
+        echo "No new games were downloaded. Going back to the list to select more games."
+        sleep 2  # Pause for a moment before showing the list again
+        continue
+    fi
+
         if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
             chmod 777 "/tmp/$filename" 2>/dev/null
             mv "/tmp/$filename" "$destination"
@@ -124,12 +131,6 @@ while true; do
         fi
     done
 
-    # If no new games were downloaded, prompt to retry
-    if [ "$any_downloaded" = false ]; then
-        echo "No new games were downloaded. Going back to the list to select more games."
-        sleep 2  # Pause for a moment before showing the list again
-        continue
-    fi
 
     # Reload ES after installations
     curl http://127.0.0.1:1234/reloadgames
