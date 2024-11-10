@@ -76,19 +76,24 @@ for game in $selected_games; do
     game_url="${games[$game]}"
     rm /tmp/.game 2>/dev/null
     echo "Downloading $game..."
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q --show-progress -O "/tmp/.game" "$game_url"
-    if [[ -s "/tmp/.game" ]]; then 
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies -v -O "/tmp/.game" "$game_url" 2>&1 | tee /tmp/.download_log
+    wget_exit_code=$?
+
+    # Check if wget succeeded
+    if [[ $wget_exit_code -eq 0 && -s "/tmp/.game" ]]; then 
         chmod 777 /tmp/.game 2>/dev/null
         mv /tmp/.game /userdata/roms/psx/
         clear
         loading_animation
         echo -e "\n\n$game installation complete.\n\n"
-    else 
+    else
         echo "Error: couldn't download game $game"
+        echo "Details from wget:"
+        cat /tmp/.download_log  # Show wget logs
     fi
 done
 
 # Reload ES after installations
-curl http://127.0.0.1:1234/reloadgames
+# curl http://127.0.0.1:1234/reloadgames
 
 echo "Exiting."
