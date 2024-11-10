@@ -1,21 +1,37 @@
 #!/bin/bash
-
 clear
-dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
 clear
-
 # Function to display animated title with colors
 animate_title() {
     local text="BATOCERA PSX DOWNLOADER"
     local delay=0.03
     local length=${#text}
-
     echo -ne "\e[1;36m"  # Set color to cyan
     for (( i=0; i<length; i++ )); do
         echo -n "${text:i:1}"
         sleep $delay
     done
     echo -e "\e[0m"  # Reset color
+}
+# Function to display animated border
+animate_border() {
+    local char="#"
+    local width=50
+    for (( i=0; i<width; i++ )); do
+        echo -n "$char"
+        sleep 0.02
+    done
+    echo
+}
+# Function to display controls
+display_controls() {
+    echo -e "\e[1;32m"  # Set color to green
+    echo "Controls:"
+    echo "  Navigate with up-down-left-right"
+    echo "  Select game with A/B/SPACE and execute with Start/X/Y/ENTER"
+    echo -e "\e[0m"  # Reset color
+    sleep 4
 }
 
 # Function to display loading animation
@@ -42,8 +58,7 @@ url_decode() {
 
 # Fetch list of game files from the URL and create a checklist
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
-game_list=($(curl -s $url |  grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
-
+game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
 
 if [ ${#game_list[@]} -eq 0 ]; then
     echo "No games found at $url"
