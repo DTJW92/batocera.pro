@@ -1,8 +1,7 @@
 #!/bin/bash
 clear
-dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
 clear
-
 # Function to display animated title with colors
 animate_title() {
     local text="BATOCERA PSX DOWNLOADER"
@@ -15,7 +14,6 @@ animate_title() {
     done
     echo -e "\e[0m"  # Reset color
 }
-
 # Function to display animated border
 animate_border() {
     local char="#"
@@ -26,7 +24,6 @@ animate_border() {
     done
     echo
 }
-
 # Function to display controls
 display_controls() {
     echo -e "\e[1;32m"  # Set color to green
@@ -91,37 +88,6 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
-# Function to handle download with progress
-download_progress() {
-    local game_url=$1
-    local filename=$2
-    local total_size
-    local current_size
-    local speed
-    local progress
-
-    # Start curl in silent mode to capture the total size
-    total_size=$(curl -sI "$game_url" | grep -i "Content-Length" | awk '{print $2}' | tr -d '\r')
-
-    if [ -z "$total_size" ]; then
-        echo "Error: Couldn't fetch file size for $filename."
-        return 1
-    fi
-
-    # Download the file with progress bar
-    curl -L --silent --show-error --progress-bar -o "/tmp/$filename" "$game_url" | while IFS= read -r line; do
-        if [[ "$line" =~ (\d+)% ]]; then
-            current_size=${BASH_REMATCH[1]}
-            progress=$((current_size * 100 / total_size))
-            # Get download speed
-            speed=$(echo "$line" | grep -oP "\d+\.?\d* [KMGT]B/s" || echo "Calculating speed...")
-            echo -ne "\rDownloading $filename... [$progress%] $current_size/$total_size bytes, $speed"
-        fi
-    done
-
-    echo -ne "\n"  # Move to the next line after download completion
-}
-
 # Install selected games
 for game in $selected_games; do
     game_url="${games[$game]}"
@@ -140,28 +106,47 @@ for game in $selected_games; do
         continue
     fi
 
-    # Retry logic for failed downloads
-    attempt=0
-    max_attempts=3
-    while [ $attempt -lt $max_attempts ]; do
-        download_progress "$game_url" "$filename"
-        if [ -s "/tmp/$filename" ]; then
-            chmod 777 "/tmp/$filename" 2>/dev/null
-            mv "/tmp/$filename" "/userdata/roms/psx/"
-            clear
-            loading_animation
-            echo -e "\n\n$game installation complete.\n\n"
-            break
-        else
-            attempt=$((attempt + 1))
-            echo "Attempt $attempt of $max_attempts failed. Retrying..."
-            sleep 2
-        fi
-    done
+    # Custom progress function to handle feedback
+    download_progress() {
+        # Use curl to fetch the file and show detailed progress
+        local total_size
+        local current_size
+        local progress
 
-    # If download failed after all attempts
-    if [ ! -s "/tmp/$filename" ]; then
-        echo "Error: Couldn't download $game after $max_attempts attempts."
+        # Start curl in silent mode, capture headers to get the total size
+        total_size=$(curl -sI "$game_url" | grep -i "Content-Length" | awk '{print $2}' | tr -d '\r')
+
+        # If total size is empty, skip
+        if [ -z "$total_size" ]; then
+            echo "Error: Couldn't fetch file size for $game."
+            return
+        fi
+
+        # Start the download using curl
+        curl -L --silent --show-error --progress-bar -o "/tmp/$filename" "$game_url" | while IFS= read -r line; do
+            # Capture the current download size and compute progress
+            if [[ "$line" =~ (\d+)% ]]; then
+                current_size=${BASH_REMATCH[1]}
+                progress=$((current_size * 100 / total_size))
+                echo -ne "\rDownloading $game... [$progress%] $current_size/$total_size bytes"
+            fi
+        done
+
+        echo -ne "\n"  # Move to the next line after download completion
+    }
+
+    # Call the progress function
+    download_progress
+
+    # Check if the download succeeded
+    if [[ -s "/tmp/$filename" ]]; then 
+        chmod 777 "/tmp/$filename" 2>/dev/null
+        mv "/tmp/$filename" "/userdata/roms/psx/"
+        clear
+        loading_animation
+        echo -e "\n\n$game installation complete.\n\n"
+    else
+        echo "Error: couldn't download game $game"
     fi
 done
 
