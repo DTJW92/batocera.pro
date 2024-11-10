@@ -44,10 +44,10 @@ if [ ! -d "/userdata/system/pro" ]; then
 fi
 
 # Download pro.sh to /userdata/system/pro
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/pro/pro.sh
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/pro/psxdownloader.sh
 
 # Download BatoceraPRO.sh to /userdata/roms/ports
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/ports/BatoceraPRO.sh
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/ports/PSXDownloader.sh
 
 # Download BatoceraPRO.sh.keys to /userdata/roms/ports
 wget  https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -P /userdata/roms/ports/
