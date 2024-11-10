@@ -37,7 +37,7 @@ display_controls() {
 # Function to display loading animation
 loading_animation() {
     local delay=0.1
-    local spinstr='|/-\'
+    local spinstr='|/-\'  
     echo -n "Loading "
     while :; do
         for (( i=0; i<${#spinstr}; i++ )); do
@@ -45,7 +45,7 @@ loading_animation() {
             echo -ne "\010"
             sleep $delay
         done
-    done &
+    done & 
     spinner_pid=$!
     sleep 3
     kill $spinner_pid
@@ -106,32 +106,10 @@ for game in $selected_games; do
         continue
     fi
 
-    # Custom progress function to handle feedback
+    # Custom progress function to handle feedback (no file size check)
     download_progress() {
-        # Use curl to fetch the file and show detailed progress
-        local total_size
-        local current_size
-        local progress
-
-        # Start curl in silent mode, capture headers to get the total size
-        total_size=$(curl -sI "$game_url" | grep -i "Content-Length" | awk '{print $2}' | tr -d '\r')
-
-        # If total size is empty, skip
-        if [ -z "$total_size" ]; then
-            echo "Error: Couldn't fetch file size for $game."
-            return
-        fi
-
         # Start the download using curl
-        curl -L --silent --show-error --progress-bar -o "/tmp/$filename" "$game_url" | while IFS= read -r line; do
-            # Capture the current download size and compute progress
-            if [[ "$line" =~ (\d+)% ]]; then
-                current_size=${BASH_REMATCH[1]}
-                progress=$((current_size * 100 / total_size))
-                echo -ne "\rDownloading $game... [$progress%] $current_size/$total_size bytes"
-            fi
-        done
-
+        curl -L --silent --show-error --progress-bar -o "/tmp/$filename" "$game_url"
         echo -ne "\n"  # Move to the next line after download completion
     }
 
@@ -139,7 +117,7 @@ for game in $selected_games; do
     download_progress
 
     # Check if the download succeeded
-    if [[ -s "/tmp/$filename" ]]; then 
+    if [[ -s "/tmp/$filename" ]]; then
         chmod 777 "/tmp/$filename" 2>/dev/null
         mv "/tmp/$filename" "/userdata/roms/psx/"
         clear
