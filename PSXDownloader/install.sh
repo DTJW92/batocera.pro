@@ -49,7 +49,7 @@ wget https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader
 # Set execute permissions for the downloaded scripts
 chmod +x /userdata/system/psxdownloader/PSXDownloader.sh
 
-killall -9 emulationstation
+# killall -9 emulationstation
 
 sleep 1
 
