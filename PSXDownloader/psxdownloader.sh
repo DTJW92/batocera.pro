@@ -89,8 +89,8 @@ for game in $selected_games; do
         continue
     fi
 
-    # Download the game with wget, show progress bar
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
+    # Download the game with wget, show progress bar that replaces the previous one
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
     wget_exit_code=$?
 
     # Check if wget succeeded
