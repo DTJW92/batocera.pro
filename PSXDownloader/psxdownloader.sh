@@ -57,69 +57,74 @@ for game in $(printf "%s\n" "${!games[@]}" | sort); do
     game_choices+=("$game" "" OFF)
 done
 
-# Show dialog checklist for game selection
-cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
-selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
-
-# Check if Cancel was pressed
-if [ $? -eq 1 ]; then
-    echo "Installation cancelled."
-    exit
-fi
-
 # Flag to track if any new file was downloaded
 new_file_downloaded=false
 
-# Install selected games
-for game in $selected_games; do
-    game_url="${games[$game]}"
-    filename=$(basename "$game")  # Extract the file name from the URL
-    destination="/userdata/roms/psx/$filename"
+# Main loop: Show file selection and download process
+while true; do
+    # Show dialog checklist for game selection
+    cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
+    selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
 
-    echo "Attempting to download from: '$game_url'"
-
-    # Check if the file already exists
-    if [ -f "$destination" ]; then
-        echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-        continue
+    # Check if Cancel was pressed
+    if [ $? -eq 1 ]; then
+        echo "Installation cancelled."
+        exit
     fi
 
-    rm "/tmp/$filename" 2>/dev/null
-    echo "Downloading $game..."
+    # Reset the flag for new file download
+    new_file_downloaded=false
 
-    # Check if the URL is valid
-    if [[ ! "$game_url" =~ ^https?:// ]]; then
-        echo "Error: The URL for $game is not valid (Scheme missing)."
-        continue
-    fi
+    # Install selected games
+    for game in $selected_games; do
+        game_url="${games[$game]}"
+        filename=$(basename "$game")  # Extract the file name from the URL
+        destination="/userdata/roms/psx/$filename"
 
-    # Download the game with wget, show progress bar
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
-    wget_exit_code=$?
+        echo "Attempting to download from: '$game_url'"
 
-    if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
-        chmod 777 "/tmp/$filename" 2>/dev/null
-        mv "/tmp/$filename" "$destination"
-        clear
-        loading_animation
-        echo -e "\n\n$game installation complete.\n\n"
+        # Check if the file already exists
+        if [ -f "$destination" ]; then
+            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
+            continue
+        fi
 
-        # Set the flag to true if a file was downloaded
-        new_file_downloaded=true
+        rm "/tmp/$filename" 2>/dev/null
+        echo "Downloading $game..."
+
+        # Check if the URL is valid
+        if [[ ! "$game_url" =~ ^https?:// ]]; then
+            echo "Error: The URL for $game is not valid (Scheme missing)."
+            continue
+        fi
+
+        # Download the game with wget, show progress bar
+        wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
+        wget_exit_code=$?
+
+        if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
+            chmod 777 "/tmp/$filename" 2>/dev/null
+            mv "/tmp/$filename" "$destination"
+            clear
+            loading_animation
+            echo -e "\n\n$game installation complete.\n\n"
+
+            # Set the flag to true if a file was downloaded
+            new_file_downloaded=true
+        else
+            echo "Error: couldn't download game $game"
+            cat /tmp/.download_log  # Show wget logs
+        fi
+    done
+
+    # Reload ES after installations
+    curl http://127.0.0.1:1234/reloadgames
+
+    # Exit the loop only if a new file was downloaded
+    if $new_file_downloaded; then
+        echo "Exiting after successful download."
+        exit
     else
-        echo "Error: couldn't download game $game"
-        cat /tmp/.download_log  # Show wget logs
+        echo "No new files were downloaded. Returning to file selection."
     fi
-
-# Reload ES after installations
-curl http://127.0.0.1:1234/reloadgames
-
-# Exit only if a new file was downloaded
-if $new_file_downloaded; then
-    echo "Exiting after successful download."
-    exit
-else
-    echo "No new files were downloaded. Exiting."
-    exit
-fi
 done
