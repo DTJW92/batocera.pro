@@ -1,3 +1,9 @@
+
+
+Share
+
+
+You said:
 #!/bin/bash
 
 clear
@@ -67,10 +73,6 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
-# Initialize the total progress bar
-total_files=${#selected_games[@]}
-file_counter=0
-
 # Install selected games
 for game in $selected_games; do
     game_url="${games[$game]}"
@@ -101,24 +103,9 @@ for game in $selected_games; do
         echo "Error: couldn't download game $game"
         cat /tmp/.download_log  # Show wget logs
     fi
-
-    # Update progress bar for total downloads
-    file_counter=$((file_counter + 1))
-    echo "Download progress: $file_counter of $total_files files downloaded."
-    # Simple progress bar display
-    percent=$((file_counter * 100 / total_files))
-    echo -ne "Progress: ["
-    for ((i=0; i<percent/5; i++)); do
-        echo -n "#"
-    done
-    for ((i=percent/5; i<20; i++)); do
-        echo -n "-"
-    done
-    echo "] $percent%"
-
 done
 
 # Reload ES after installations
-# curl http://127.0.0.1:1234/reloadgames
+curl http://127.0.0.1:1234/reloadgames
 
 echo "Exiting."
