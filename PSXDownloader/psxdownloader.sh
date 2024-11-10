@@ -78,7 +78,7 @@ for game in $selected_games; do
     # Check if the file already exists
     if [ -f "$destination" ]; then
         echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-        continue
+        continue  # Skip this game and move to the next one
     fi
 
     rm "/tmp/$filename" 2>/dev/null
