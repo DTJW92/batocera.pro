@@ -75,15 +75,19 @@ fi
 for game in $selected_games; do
     game_url="${games[$game]}"
 
-    # Log the game URL for debugging purposes
-    echo "Attempting to download: $game_url"
+    # Log the full URL for debugging purposes
+    echo "Attempting to download from: '$game_url'"
 
     rm /tmp/.game 2>/dev/null
     echo "Downloading $game..."
+
+    # Clean up any accidental spaces or newlines
+    game_url=$(echo "$game_url" | tr -d '[:space:]')
     
-    # Ensure the URL starts with "http" or "https"
+    # Check if the URL is valid
     if [[ ! "$game_url" =~ ^https?:// ]]; then
-        echo "Error: The URL for $game is not valid. Please check the URL format."
+        echo "Error: The URL for $game is not valid (Scheme missing)."
+        echo "URL attempted: '$game_url'"
         continue
     fi
 
