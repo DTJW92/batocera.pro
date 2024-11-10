@@ -74,8 +74,20 @@ fi
 # Install selected games
 for game in $selected_games; do
     game_url="${games[$game]}"
+
+    # Log the game URL for debugging purposes
+    echo "Attempting to download: $game_url"
+
     rm /tmp/.game 2>/dev/null
     echo "Downloading $game..."
+    
+    # Ensure the URL starts with "http" or "https"
+    if [[ ! "$game_url" =~ ^https?:// ]]; then
+        echo "Error: The URL for $game is not valid. Please check the URL format."
+        continue
+    fi
+
+    # Download the game with wget and log the details
     wget --tries=10 --no-check-certificate --no-cache --no-cookies -v -O "/tmp/.game" "$game_url" 2>&1 | tee /tmp/.download_log
     wget_exit_code=$?
 
@@ -94,6 +106,6 @@ for game in $selected_games; do
 done
 
 # Reload ES after installations
-# curl http://127.0.0.1:1234/reloadgames
+curl http://127.0.0.1:1234/reloadgames
 
 echo "Exiting."
