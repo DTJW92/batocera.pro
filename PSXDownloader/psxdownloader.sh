@@ -1,9 +1,3 @@
-
-
-Share
-
-
-You said:
 #!/bin/bash
 
 clear
@@ -77,8 +71,15 @@ fi
 for game in $selected_games; do
     game_url="${games[$game]}"
     filename=$(basename "$game")  # Extract the file name from the URL
+    destination="/userdata/roms/psx/$filename"
 
     echo "Attempting to download from: '$game_url'"
+
+    # Check if the file already exists
+    if [ -f "$destination" ]; then
+        echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
+        continue
+    fi
 
     rm "/tmp/$filename" 2>/dev/null
     echo "Downloading $game..."
@@ -95,7 +96,7 @@ for game in $selected_games; do
 
     if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
         chmod 777 "/tmp/$filename" 2>/dev/null
-        mv "/tmp/$filename" "/userdata/roms/psx/"
+        mv "/tmp/$filename" "$destination"
         clear
         loading_animation
         echo -e "\n\n$game installation complete.\n\n"
