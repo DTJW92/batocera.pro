@@ -1,7 +1,7 @@
 #!/bin/bash
 
 clear
-dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
+zenity --info --title="Warning" --text="Note: Batocera.Pro is deprecated and going archived. Support is not longer available." --width=300 --height=100
 clear
 
 # Function to display animated title with colors
@@ -67,10 +67,10 @@ if [ ${#game_list[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Prompt for search term
-search_term=$(dialog --inputbox "Enter search term (leave blank to show all games):" 8 50 "" 2>&1 >/dev/tty)
+# Prompt for search term using Zenity
+search_term=$(zenity --entry --title="Search for games" --text="Enter search term (leave blank to show all games):" --width=300)
 
-# Prepare array for dialog command, grouped by first letter (A-Z)
+# Prepare array for Zenity checklist (letters A-Z)
 declare -A game_groups
 for game in "${game_list[@]}"; do
     # Get the first letter of the game name
@@ -80,17 +80,15 @@ for game in "${game_list[@]}"; do
     game_groups[$first_letter]+="$game"$'\n'
 done
 
-# Prepare array for dialog checklist (letters A-Z)
 letter_choices=()
 for letter in {A..Z}; do
     if [[ -n "${game_groups[$letter]}" ]]; then
-        letter_choices+=("$letter" "" OFF)
+        letter_choices+=("$letter" "$letter" FALSE)
     fi
 done
 
-# Show dialog to select letter (A-Z) to browse files
-cmd=(dialog --separate-output --checklist "Select a letter to browse PSX games:" 22 76 16)
-selected_letters=$("${cmd[@]}" "${letter_choices[@]}" 2>&1 >/dev/tty)
+# Show Zenity checklist for selecting letter (A-Z)
+selected_letters=$(zenity --list --checklist --title="Select a letter to browse PSX games" --column="Select" --column="Letter" "${letter_choices[@]}" --width=400 --height=300)
 
 # Check if Cancel was pressed
 if [ $? -eq 1 ]; then
@@ -99,7 +97,8 @@ if [ $? -eq 1 ]; then
 fi
 
 # Loop through the selected letters
-for letter in $selected_letters; do
+IFS='|' read -r -a selected_letters_array <<< "$selected_letters"
+for letter in "${selected_letters_array[@]}"; do
     # Get the games starting with this letter
     games_in_group="${game_groups[$letter]}"
     
@@ -108,21 +107,21 @@ for letter in $selected_letters; do
         games_in_group=$(echo -e "$games_in_group" | grep -i "$search_term")
     fi
 
-    # Prepare game choices for dialog
+    # Prepare game choices for Zenity checklist
     game_choices=()
     while IFS= read -r game; do
-        game_choices+=("$game" "" OFF)
+        game_choices+=("$game" "$game" FALSE)
     done <<< "$games_in_group"
 
-    # Show dialog checklist for game selection
+    # Show Zenity checklist for game selection
     if [ ${#game_choices[@]} -eq 0 ]; then
-        dialog --msgbox "No matching games found for letter $letter." 6 40
+        zenity --info --title="No Games Found" --text="No matching games found for letter $letter." --width=300 --height=100
     else
-        cmd=(dialog --separate-output --checklist "Select PSX games starting with $letter:" 22 76 16)
-        selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
+        selected_games=$(zenity --list --checklist --title="Select PSX games starting with $letter" --column="Select" --column="Game" "${game_choices[@]}" --width=400 --height=300)
 
         # Install selected games
-        for game in $selected_games; do
+        IFS='|' read -r -a selected_games_array <<< "$selected_games"
+        for game in "${selected_games_array[@]}"; do
             game_url="curl -Ls $url$game -o /userdata/roms/psx/$game"
             rm /tmp/.game 2>/dev/null
             echo "Downloading $game..."
