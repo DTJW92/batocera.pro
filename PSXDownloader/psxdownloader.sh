@@ -58,7 +58,7 @@ loading_animation() {
     echo "Done!"
 }
 
-# URL decode function to handle spaces in filenames
+# URL decode function to handle spaces and other encoded characters
 url_decode() {
     echo -e "$(echo "$1" | sed 's/%20/ /g')"
 }
@@ -80,7 +80,8 @@ fi
 # Prepare array for dialog command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
-    games["$game"]="curl -Ls ${url}${game} -o /userdata/roms/psx/${game}"
+    decoded_game=$(url_decode "$game")
+    games["$decoded_game"]="${url}${game}"  # Store original URL in associative array
 done
 
 # Prepare array for dialog checklist
@@ -101,7 +102,7 @@ fi
 
 # Install selected games with progress tracking
 for game in $selected_games; do
-    game_url="${url}${game}"
+    game_url="${games[$game]}"
     output_file="/userdata/roms/psx/${game}"
     
     echo "Downloading $game..."
