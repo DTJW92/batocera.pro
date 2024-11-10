@@ -58,9 +58,12 @@ loading_animation() {
     echo "Done!"
 }
 
-# URL decode function to handle spaces and other encoded characters
-url_decode() {
-    echo -e "$(echo "$1" | sed 's/%20/ /g')"
+# URL decode function to handle spaces and remove file extensions for display
+format_display_name() {
+    local name="$1"
+    name="${name//%20/ }"   # Replace %20 with space
+    name="${name%.chd}"     # Remove .chd extension
+    echo "$name"
 }
 
 # Animated title and controls
@@ -80,14 +83,14 @@ fi
 # Prepare array for dialog command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
-    decoded_game=$(url_decode "$game")
-    games["$decoded_game"]="${url}${game}"  # Store original URL in associative array
+    display_name=$(format_display_name "$game")
+    games["$display_name"]="${url}${game}"  # Store original URL in associative array
 done
 
 # Prepare array for dialog checklist
 game_choices=()
-for game in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$game" "" OFF)
+for display_name in $(printf "%s\n" "${!games[@]}" | sort); do
+    game_choices+=("$display_name" "" OFF)
 done
 
 # Show dialog checklist for game selection
@@ -101,20 +104,20 @@ if [ $? -eq 1 ]; then
 fi
 
 # Install selected games with progress tracking
-for game in $selected_games; do
-    game_url="${games[$game]}"
-    output_file="/userdata/roms/psx/${game}"
-    
-    echo "Downloading $game..."
-    
+for display_name in $selected_games; do
+    game_url="${games[$display_name]}"
+    output_file="/userdata/roms/psx/${display_name}.chd"  # Restore .chd extension for actual file
+
+    echo "Downloading $display_name..."
+
     wget --show-progress --progress=bar:force -O "$output_file" "$game_url"
     
     if [[ -s "$output_file" ]]; then 
         chmod 777 "$output_file" 2>/dev/null
         loading_animation
-        echo -e "\n\n$game installation complete.\n\n"
+        echo -e "\n\n$display_name installation complete.\n\n"
     else 
-        echo "Error: couldn't download game $game"
+        echo "Error: couldn't download game $display_name"
         rm -f "$output_file"  # Clean up partially downloaded file
     fi
 done
