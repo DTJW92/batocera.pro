@@ -1,58 +1,112 @@
 #!/bin/bash
 
-# Get the machine hardware name
-architecture=$(uname -m)
+clear
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
+clear
 
-# Check if the architecture is x86_64 (AMD/Intel)
-if [ "$architecture" != "x86_64" ]; then
-    echo "This script only runs on AMD or Intel (x86_64) CPUs, not on $architecture."
-    exit 1
-fi
-
-# Function to display animated title
+# Function to display animated title with colors
 animate_title() {
-    local text="BATOCERA PSX DOWNLOADER INSTALLER"
-    local delay=0.1
+    local text="BATOCERA PSX DOWNLOADER"
+    local delay=0.03
     local length=${#text}
 
+    echo -ne "\e[1;36m"  # Set color to cyan
     for (( i=0; i<length; i++ )); do
         echo -n "${text:i:1}"
         sleep $delay
+    done
+    echo -e "\e[0m"  # Reset color
+}
+
+# Function to display animated border
+animate_border() {
+    local char="#"
+    local width=50
+
+    for (( i=0; i<width; i++ )); do
+        echo -n "$char"
+        sleep 0.02
     done
     echo
 }
 
 # Function to display controls
 display_controls() {
-    echo 
-    echo "  This Will install PSX Downloader to Ports"
-    echo    
-    sleep 5  # Delay for 5 seconds
+    echo -e "\e[1;32m"  # Set color to green
+    echo "Controls:"
+    echo "  Navigate with up-down-left-right"
+    echo "  Select game with A/B/SPACE and execute with Start/X/Y/ENTER"
+    echo -e "\e[0m"  # Reset color
+    sleep 4
 }
 
-# Main script execution
-clear
-animate_title
-display_controls
+# Function to display loading animation
+loading_animation() {
+    local delay=0.1
+    local spinstr='|/-\'
+    echo -n "Loading "
+    while :; do
+        for (( i=0; i<${#spinstr}; i++ )); do
+            echo -ne "${spinstr:i:1}"
+            echo -ne "\010"
+            sleep $delay
+        done
+    done &
+    spinner_pid=$!
+    sleep 3
+    kill $spinner_pid
+    echo "Done!"
+}
 
-# Check if /userdata/system/psxdownloader does not exist and create it if necessary
-if [ ! -d "/userdata/system/psxdownloader" ]; then
-    mkdir -p /userdata/system/psxdownloader
+# Fetch list of game files from the URL and create a checklist
+url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
+game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+
+if [ ${#game_list[@]} -eq 0 ]; then
+    echo "No games found at $url"
+    exit 1
 fi
 
-# Download PSXDownloader.sh to /userdata/system/psxdownloader
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/system/psxdownloader/PSXDownloader.sh
+# Prepare array for dialog command, sorted by game name
+declare -A games
+for game in "${game_list[@]}"; do
+    games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
+done
 
-# Download PSXDownloader.sh.keys to /userdata/roms/ports
-wget https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -P /userdata/roms/ports/
+# Prepare array for dialog checklist
+game_choices=()
+for game in $(printf "%s\n" "${!games[@]}" | sort); do
+    game_choices+=("$game" "" OFF)
+done
 
-# Set execute permissions for the downloaded scripts
-chmod +x /userdata/system/psxdownloader/PSXDownloader.sh
+# Show dialog checklist for game selection
+cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
+selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
 
-killall -9 emulationstation
+# Check if Cancel was pressed
+if [ $? -eq 1 ]; then
+    echo "Installation cancelled."
+    exit
+fi
 
-sleep 1
+# Install selected games
+for game in $selected_games; do
+    game_url="${games[$game]}"
+    rm /tmp/.game 2>/dev/null
+    echo "Downloading $game..."
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
+    if [[ -s "/tmp/.game" ]]; then 
+        chmod 777 /tmp/.game 2>/dev/null
+        mv /tmp/.game /userdata/roms/psx/
+        clear
+        loading_animation
+        echo -e "\n\n$game installation complete.\n\n"
+    else 
+        echo "Error: couldn't download game $game"
+    fi
+done
 
-mv /userdata/roms/ports/bkeys.txt /userdata/roms/ports/PSXDownloader.sh.keys
+# Reload ES after installations
+curl http://127.0.0.1:1234/reloadgames
 
-echo "Finished. You should see PSXDownloader in Ports."
+echo "Exiting."
