@@ -1,9 +1,3 @@
-
-
-Share
-
-
-You said:
 #!/bin/bash
 
 clear
@@ -63,6 +57,7 @@ loading_animation() {
     kill $spinner_pid
     echo "Done!"
 }
+
 url_decode() {
     echo -e "$(echo "$1" | sed 's/%20/ /g')"
 }
@@ -80,18 +75,43 @@ fi
 declare -A games
 for game in "${game_list[@]}"; do
     games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
-    
 done
 
-# Prepare array for dialog checklist
-game_choices=()
-for game in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$game" "" OFF)
+# Create an array of letters based on the first letter of each game name
+letters=($(echo "${!games[@]}" | sed 's/\([^ ]*\)/\1\n/g' | cut -c1 | sort | uniq))
+
+# Show dialog for letter selection
+letter_choices=()
+for letter in "${letters[@]}"; do
+    letter_choices+=("$letter" "" OFF)
 done
 
-# Show dialog checklist for game selection
-cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
-selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
+cmd=(dialog --separate-output --checklist "Select a letter to filter games:" 22 76 16)
+selected_letter=$("${cmd[@]}" "${letter_choices[@]}" 2>&1 >/dev/tty)
+
+# Check if Cancel was pressed
+if [ $? -eq 1 ]; then
+    echo "Installation cancelled."
+    exit
+fi
+
+# Filter games based on the selected letter
+filtered_games=()
+for game in "${!games[@]}"; do
+    if [[ ${game:0:1} == "$selected_letter" ]]; then
+        filtered_games+=("$game" "" OFF)
+    fi
+done
+
+# If no games found for that letter
+if [ ${#filtered_games[@]} -eq 0 ]; then
+    echo "No games found starting with the letter '$selected_letter'."
+    exit 1
+fi
+
+# Show dialog checklist for game selection from the filtered list
+cmd=(dialog --separate-output --checklist "Select PSX games to install (starting with $selected_letter):" 22 76 16)
+selected_games=$("${cmd[@]}" "${filtered_games[@]}" 2>&1 >/dev/tty)
 
 # Check if Cancel was pressed
 if [ $? -eq 1 ]; then
@@ -104,7 +124,10 @@ for game in $selected_games; do
     game_url="${games[$game]}"
     rm /tmp/.game 2>/dev/null
     echo "Downloading $game..."
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
+    
+    # Using wget with a progress bar
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q --show-progress -O "/tmp/.game" "$game_url"
+    
     if [[ -s "/tmp/.game" ]]; then 
         chmod 777 /tmp/.game 2>/dev/null
         mv /tmp/.game /userdata/roms/psx/
