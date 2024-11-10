@@ -21,7 +21,7 @@ animate_title() {
 # Function to display loading animation
 loading_animation() {
     local delay=0.1
-    local spinstr='|/-\'
+    local spinstr='|/-\'    
     echo -n "Loading "
     while :; do
         for (( i=0; i<${#spinstr}; i++ )); do
@@ -67,6 +67,9 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
+# Flag to track if any new file was downloaded
+new_file_downloaded=false
+
 # Install selected games
 for game in $selected_games; do
     game_url="${games[$game]}"
@@ -100,13 +103,23 @@ for game in $selected_games; do
         clear
         loading_animation
         echo -e "\n\n$game installation complete.\n\n"
+
+        # Set the flag to true if a file was downloaded
+        new_file_downloaded=true
     else
         echo "Error: couldn't download game $game"
         cat /tmp/.download_log  # Show wget logs
     fi
-done
 
 # Reload ES after installations
 curl http://127.0.0.1:1234/reloadgames
 
-echo "Exiting."
+# Exit only if a new file was downloaded
+if $new_file_downloaded; then
+    echo "Exiting after successful download."
+    exit
+else
+    echo "No new files were downloaded. Exiting."
+    exit
+fi
+done
