@@ -44,7 +44,7 @@ fi
 curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/system/psxdownloader/PSXDownloader.sh
 
 # Download PSXDownloader.sh.keys to /userdata/roms/ports
-wget https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh.keys -P /userdata/roms/ports/
+wget https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -P /userdata/roms/ports/
 
 # Set execute permissions for the downloaded scripts
 chmod +x /userdata/system/psxdownloader/PSXDownloader.sh
@@ -53,6 +53,6 @@ killall -9 emulationstation
 
 sleep 1
 
-mv /userdata/roms/ports/PSXDownloader.sh.keys /userdata/roms/ports/PSXDownloader.sh.keys
+mv /userdata/roms/ports/bkeys.txt /userdata/roms/ports/PSXDownloader.sh.keys
 
 echo "Finished. You should see PSXDownloader in Ports."
