@@ -1,7 +1,7 @@
 #!/bin/bash
 
 clear
-dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
 clear
 
 # Function to display animated title with colors
@@ -53,34 +53,36 @@ loading_animation() {
         done
     done &
     spinner_pid=$!
-    sleep 3
-    kill $spinner_pid
-    echo "Done!"
+    trap "kill $spinner_pid 2>/dev/null" EXIT  # Ensure the spinner stops when script exits
 }
+
 url_decode() {
     echo -e "$(echo "$1" | sed 's/%20/ /g')"
 }
 
-# Fetch list of game files from the URL and create a checklist
+# Fetch list of game files and their display names from the URL
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
-game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+raw_list=$(curl -s "$url")
+
+# Parse file names and display names
+game_list=($(echo "$raw_list" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+display_names=($(echo "$raw_list" | grep -oP '>[^<]+</a>' | sed 's/[<>/]//g'))
 
 if [ ${#game_list[@]} -eq 0 ]; then
     echo "No games found at $url"
     exit 1
 fi
 
-# Prepare array for dialog command, sorted by game name
+# Prepare arrays for dialog checklist, mapping display names to game URLs
 declare -A games
-for game in "${game_list[@]}"; do
-    games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
-    
+for i in "${!game_list[@]}"; do
+    games["${display_names[$i]}"]="curl -Ls $url${game_list[$i]} -o /userdata/roms/psx/${game_list[$i]}"
 done
 
-# Prepare array for dialog checklist
+# Prepare dialog checklist items
 game_choices=()
-for game in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$game" "" OFF)
+for display_name in $(printf "%s\n" "${!games[@]}" | sort); do
+    game_choices+=("$display_name" "" OFF)
 done
 
 # Show dialog checklist for game selection
@@ -93,20 +95,19 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
-# Install selected games
-for game in $selected_games; do
-    game_url="${games[$game]}"
-    rm /tmp/.game 2>/dev/null
-    echo "Downloading $game..."
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
+# Install selected games using display name mapping
+for display_name in $selected_games; do
+    game_url="${games[$display_name]}"
+    echo "Downloading $display_name..."
+    wget --show-progress --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
     if [[ -s "/tmp/.game" ]]; then 
         chmod 777 /tmp/.game 2>/dev/null
         mv /tmp/.game /userdata/roms/psx/
         clear
         loading_animation
-        echo -e "\n\n$game installation complete.\n\n"
+        echo -e "\n\n$display_name installation complete.\n\n"
     else 
-        echo "Error: couldn't download game $game"
+        echo "Error: couldn't download $display_name"
     fi
 done
 
