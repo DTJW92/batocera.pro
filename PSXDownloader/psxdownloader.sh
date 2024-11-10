@@ -52,7 +52,8 @@ fi
 # Prepare array for dialog command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
-    games["$game"]="$url$game"
+    game_url=$(url_decode "$url$game")
+    games["$game"]="$game_url"
 done
 
 # Prepare array for dialog checklist
@@ -77,7 +78,7 @@ for game in $selected_games; do
     filename=$(basename "$game")  # Extract the file name from the URL
 
     # Log the full URL for debugging purposes
-    echo "Attempting to download from: $game"
+    echo "Attempting to download from: $game_url"
 
     rm "/tmp/$filename" 2>/dev/null
     echo "Downloading $game..."
@@ -89,8 +90,37 @@ for game in $selected_games; do
         continue
     fi
 
-    # Use curl to download with a progress bar that replaces the previous one
-    curl -L --progress-bar -o "/tmp/$filename" "$game_url" 2>&1 | sed -u 's/^/[DOWNLOAD] /'  # Option to show progress
+    # Custom progress function to handle feedback
+    download_progress() {
+        # Use curl to fetch the file and show detailed progress
+        local total_size
+        local current_size
+        local progress
+
+        # Start curl in silent mode, capture headers to get the total size
+        total_size=$(curl -sI "$game_url" | grep -i "Content-Length" | awk '{print $2}' | tr -d '\r')
+
+        # If total size is empty, skip
+        if [ -z "$total_size" ]; then
+            echo "Error: Couldn't fetch file size for $game."
+            return
+        fi
+
+        # Start the download using curl
+        curl -L --silent --show-error --progress-bar -o "/tmp/$filename" "$game_url" | while IFS= read -r line; do
+            # Capture the current download size and compute progress
+            if [[ "$line" =~ (\d+)% ]]; then
+                current_size=${BASH_REMATCH[1]}
+                progress=$((current_size * 100 / total_size))
+                echo -ne "\rDownloading $game... [$progress%] $current_size/$total_size bytes"
+            fi
+        done
+
+        echo -ne "\n"  # Move to the next line after download completion
+    }
+
+    # Call the progress function
+    download_progress
 
     # Check if the download succeeded
     if [[ -s "/tmp/$filename" ]]; then 
