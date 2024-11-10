@@ -89,12 +89,11 @@ for game in $selected_games; do
         continue
     fi
 
-    # Download the game with wget, show progress bar that replaces the previous one
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
-    wget_exit_code=$?
+    # Use curl to download with a progress bar that replaces the previous one
+    curl -L --progress-bar -o "/tmp/$filename" "$game_url" 2>&1 | sed -u 's/^/[DOWNLOAD] /'  # Option to show progress
 
-    # Check if wget succeeded
-    if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then 
+    # Check if the download succeeded
+    if [[ -s "/tmp/$filename" ]]; then 
         chmod 777 "/tmp/$filename" 2>/dev/null
         mv "/tmp/$filename" "/userdata/roms/psx/"
         clear
@@ -102,8 +101,6 @@ for game in $selected_games; do
         echo -e "\n\n$game installation complete.\n\n"
     else
         echo "Error: couldn't download game $game"
-        echo "Details from wget:"
-        cat /tmp/.download_log  # Show wget logs
     fi
 done
 
