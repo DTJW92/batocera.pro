@@ -52,7 +52,7 @@ fi
 # Prepare array for dialog command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
-    games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
+    games["$game"]="$url$game"
 done
 
 # Prepare array for dialog checklist
@@ -81,9 +81,6 @@ for game in $selected_games; do
     rm /tmp/.game 2>/dev/null
     echo "Downloading $game..."
 
-    # Clean up any accidental spaces or newlines
-    game_url=$(echo "$game_url" | tr -d '[:space:]')
-    
     # Check if the URL is valid
     if [[ ! "$game_url" =~ ^https?:// ]]; then
         echo "Error: The URL for $game is not valid (Scheme missing)."
@@ -91,7 +88,7 @@ for game in $selected_games; do
         continue
     fi
 
-    # Download the game with wget and log the details
+    # Download the game with wget
     wget --tries=10 --no-check-certificate --no-cache --no-cookies -v -O "/tmp/.game" "$game_url" 2>&1 | tee /tmp/.download_log
     wget_exit_code=$?
 
