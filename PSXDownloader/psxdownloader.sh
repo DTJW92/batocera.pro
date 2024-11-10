@@ -1,7 +1,7 @@
 #!/bin/bash
 
 clear
-zenity --info --title="Warning" --text="Note: Batocera.Pro is deprecated and going archived. Support is not longer available." --width=300 --height=100
+dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is not longer available." 20 70
 clear
 
 # Function to display animated title with colors
@@ -67,28 +67,21 @@ if [ ${#game_list[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Prompt for search term using Zenity
-search_term=$(zenity --entry --title="Search for games" --text="Enter search term (leave blank to show all games):" --width=300)
-
-# Prepare array for Zenity checklist (letters A-Z)
-declare -A game_groups
+# Prepare array for dialog command, sorted by game name
+declare -A games
 for game in "${game_list[@]}"; do
-    # Get the first letter of the game name
-    first_letter=$(echo "$game" | cut -c1 | tr 'a-z' 'A-Z')
-    
-    # Add the game to the appropriate group
-    game_groups[$first_letter]+="$game"$'\n'
+    games["$game"]="curl -Ls $url$game -o /userdata/roms/psx/$game"
 done
 
-letter_choices=()
-for letter in {A..Z}; do
-    if [[ -n "${game_groups[$letter]}" ]]; then
-        letter_choices+=("$letter" "$letter" FALSE)
-    fi
+# Prepare array for dialog checklist
+game_choices=()
+for game in $(printf "%s\n" "${!games[@]}" | sort); do
+    game_choices+=("$game" "" OFF)
 done
 
-# Show Zenity checklist for selecting letter (A-Z)
-selected_letters=$(zenity --list --checklist --title="Select a letter to browse PSX games" --column="Select" --column="Letter" "${letter_choices[@]}" --width=400 --height=300)
+# Show dialog checklist for game selection
+cmd=(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16)
+selected_games=$("${cmd[@]}" "${game_choices[@]}" 2>&1 >/dev/tty)
 
 # Check if Cancel was pressed
 if [ $? -eq 1 ]; then
@@ -96,46 +89,20 @@ if [ $? -eq 1 ]; then
     exit
 fi
 
-# Loop through the selected letters
-IFS='|' read -r -a selected_letters_array <<< "$selected_letters"
-for letter in "${selected_letters_array[@]}"; do
-    # Get the games starting with this letter
-    games_in_group="${game_groups[$letter]}"
-    
-    # If search term is provided, filter the games by the search term
-    if [[ -n "$search_term" ]]; then
-        games_in_group=$(echo -e "$games_in_group" | grep -i "$search_term")
-    fi
-
-    # Prepare game choices for Zenity checklist
-    game_choices=()
-    while IFS= read -r game; do
-        game_choices+=("$game" "$game" FALSE)
-    done <<< "$games_in_group"
-
-    # Show Zenity checklist for game selection
-    if [ ${#game_choices[@]} -eq 0 ]; then
-        zenity --info --title="No Games Found" --text="No matching games found for letter $letter." --width=300 --height=100
-    else
-        selected_games=$(zenity --list --checklist --title="Select PSX games starting with $letter" --column="Select" --column="Game" "${game_choices[@]}" --width=400 --height=300)
-
-        # Install selected games
-        IFS='|' read -r -a selected_games_array <<< "$selected_games"
-        for game in "${selected_games_array[@]}"; do
-            game_url="curl -Ls $url$game -o /userdata/roms/psx/$game"
-            rm /tmp/.game 2>/dev/null
-            echo "Downloading $game..."
-            wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
-            if [[ -s "/tmp/.game" ]]; then 
-                chmod 777 /tmp/.game 2>/dev/null
-                mv /tmp/.game /userdata/roms/psx/
-                clear
-                loading_animation
-                echo -e "\n\n$game installation complete.\n\n"
-            else 
-                echo "Error: couldn't download game $game"
-            fi
-        done
+# Install selected games
+for game in $selected_games; do
+    game_url="${games[$game]}"
+    rm /tmp/.game 2>/dev/null
+    echo "Downloading $game..."
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies -q -O "/tmp/.game" "$game_url"
+    if [[ -s "/tmp/.game" ]]; then 
+        chmod 777 /tmp/.game 2>/dev/null
+        mv /tmp/.game /userdata/roms/psx/
+        clear
+        loading_animation
+        echo -e "\n\n$game installation complete.\n\n"
+    else 
+        echo "Error: couldn't download game $game"
     fi
 done
 
