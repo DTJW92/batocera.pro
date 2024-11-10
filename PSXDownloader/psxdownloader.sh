@@ -77,9 +77,9 @@ if [ ${#games[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Prepare dialog checklist items
+# Prepare dialog checklist items, sorted alphabetically
 game_choices=()
-for display_text in "${!games[@]}"; do
+for display_text in $(echo "${!games[@]}" | sort); do
     game_choices+=("$display_text" "" OFF)
 done
 
