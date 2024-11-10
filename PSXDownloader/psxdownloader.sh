@@ -77,7 +77,7 @@ for game in $selected_games; do
     filename=$(basename "$game")  # Extract the file name from the URL
 
     # Log the full URL for debugging purposes
-    echo "Attempting to download from: '$game_url'"
+    echo "Attempting to download from: $game"
 
     rm "/tmp/$filename" 2>/dev/null
     echo "Downloading $game..."
