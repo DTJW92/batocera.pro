@@ -87,10 +87,10 @@ for game in "${game_list[@]}"; do
     games["$display_name"]="${url}${game}"  # Store original URL in associative array
 done
 
-# Prepare array for dialog checklist
+# Prepare array for dialog checklist with quotes around names
 game_choices=()
 for display_name in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$display_name" "" OFF)
+    game_choices+=("\"$display_name\"" "" OFF)
 done
 
 # Show dialog checklist for game selection
