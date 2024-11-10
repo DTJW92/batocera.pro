@@ -74,11 +74,12 @@ fi
 # Install selected games
 for game in $selected_games; do
     game_url="${games[$game]}"
+    filename=$(basename "$game")  # Extract the file name from the URL
 
     # Log the full URL for debugging purposes
     echo "Attempting to download from: '$game_url'"
 
-    rm /tmp/.game 2>/dev/null
+    rm "/tmp/$filename" 2>/dev/null
     echo "Downloading $game..."
 
     # Check if the URL is valid
@@ -88,14 +89,14 @@ for game in $selected_games; do
         continue
     fi
 
-    # Download the game with wget
-    wget --tries=10 --no-check-certificate --no-cache --no-cookies -v -O "/tmp/.game" "$game_url" 2>&1 | tee /tmp/.download_log
+    # Download the game with wget, show progress bar
+    wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
     wget_exit_code=$?
 
     # Check if wget succeeded
-    if [[ $wget_exit_code -eq 0 && -s "/tmp/.game" ]]; then 
-        chmod 777 /tmp/.game 2>/dev/null
-        mv /tmp/.game /userdata/roms/psx/
+    if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then 
+        chmod 777 "/tmp/$filename" 2>/dev/null
+        mv "/tmp/$filename" "/userdata/roms/psx/"
         clear
         loading_animation
         echo -e "\n\n$game installation complete.\n\n"
