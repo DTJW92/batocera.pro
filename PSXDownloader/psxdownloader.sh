@@ -29,15 +29,11 @@ loading_animation() {
             echo -ne "\010"
             sleep $delay
         done
-    done &
+    done & 
     spinner_pid=$!
     sleep 3
     kill $spinner_pid
     echo "Done!"
-}
-
-url_decode() {
-    echo -e "$(echo "$1" | sed 's/%20/ /g')"
 }
 
 # Fetch list of game files from the URL and create a checklist
@@ -76,7 +72,6 @@ for game in $selected_games; do
     game_url="${games[$game]}"
     filename=$(basename "$game")  # Extract the file name from the URL
 
-    # Log the full URL for debugging purposes
     echo "Attempting to download from: '$game_url'"
 
     rm "/tmp/$filename" 2>/dev/null
@@ -85,16 +80,14 @@ for game in $selected_games; do
     # Check if the URL is valid
     if [[ ! "$game_url" =~ ^https?:// ]]; then
         echo "Error: The URL for $game is not valid (Scheme missing)."
-        echo "URL attempted: '$game_url'"
         continue
     fi
 
-    # Download the game with wget, show progress bar that replaces the previous one
+    # Download the game with wget, show progress bar
     wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | tee /tmp/.download_log
     wget_exit_code=$?
 
-    # Check if wget succeeded
-    if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then 
+    if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
         chmod 777 "/tmp/$filename" 2>/dev/null
         mv "/tmp/$filename" "/userdata/roms/psx/"
         clear
@@ -102,7 +95,6 @@ for game in $selected_games; do
         echo -e "\n\n$game installation complete.\n\n"
     else
         echo "Error: couldn't download game $game"
-        echo "Details from wget:"
         cat /tmp/.download_log  # Show wget logs
     fi
 done
