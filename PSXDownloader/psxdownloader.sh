@@ -42,7 +42,7 @@ url_decode() {
 
 # Fetch list of game files from the URL and create a checklist
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
-game_list=($(curl -s $url | sed 'y/+/ /; s/%20/ /g' | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+game_list=($(curl -s $url | sed 's/%[0-9A-Fa-f][0-9A-Fa-f]/ /g' | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
 
 
 if [ ${#game_list[@]} -eq 0 ]; then
