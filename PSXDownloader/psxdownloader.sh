@@ -17,13 +17,15 @@ extract_game_titles() {
             sed 's/%20/ /g; s/%28/(/g; s/%29/)/g' | \
             sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g' | \
             sed 's/([^)]*)//g' | \
-            tr -s ' ')  # This will replace multiple spaces with a single space and remove leading/trailing spaces
-        
+            tr -s ' ' )  # This will replace multiple spaces with a single space and remove leading/trailing spaces
+
         title_to_file_map["$title"]="$file"
     done
-    # Sort titles alphabetically
+
+    # Sort titles alphabetically and prepare for dialog
     for title in $(echo "${!title_to_file_map[@]}" | tr ' ' '\n' | sort); do
-        echo "${title_to_file_map[$title]} - $title"
+        # Pass the title and file as a single line in the correct format for dialog
+        echo "$title" "${title_to_file_map[$title]}" off
     done
 }
 
@@ -65,11 +67,7 @@ main() {
         # Let the user select games
         selected_titles=$(dialog --title "Select Games" --checklist \
             "Select the games to download:" 15 60 8 \
-            $(for title in $game_titles; do
-                game_file=$(echo $title | awk '{print $1}')
-                game_name=$(echo $title | cut -d ' ' -f 2-)
-                echo "$game_name" "$game_name" off
-            done) 2>&1 >/dev/tty)
+            $game_titles 2>&1 >/dev/tty)
 
         # Check if user canceled
         if [ $? -eq 1 ]; then
