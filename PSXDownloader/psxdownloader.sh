@@ -17,9 +17,10 @@ extract_game_titles() {
     local files=("$@")
     declare -A title_to_file_map=()
     for file in "${files[@]}"; do
-        # Strip the .chd extension and decode HTML entities
+        # Strip the .chd extension, decode HTML entities, and clean up
         title=$(basename "$file" .chd | \
-            sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g; s/&lpar;/(/g; s/&rpar;/)/g' | \
+            sed 's/%20/ /g; s/%28/(/g; s/%29/)/g' | \
+            sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g' | \
             sed 's/([^)]*)//g' | xargs)
         title_to_file_map["$title"]="$file"
     done
