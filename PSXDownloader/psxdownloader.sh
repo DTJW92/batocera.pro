@@ -86,6 +86,7 @@ while true; do
         # Check if the file already exists
         if [ -f "$destination" ]; then
             echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
+            sleep 3
             continue
         fi
 
@@ -123,8 +124,11 @@ while true; do
     # Exit the loop only if a new file was downloaded
     if $new_file_downloaded; then
         echo "Exiting after successful download."
+        sleep 3
         exit
     else
-        echo "No new files were downloaded. Returning to file selection."
+        # Add a 3-second delay before returning to file selection
+        echo "No new files were downloaded. Returning to file selection in 3 seconds..."
+        sleep 3
     fi
 done
