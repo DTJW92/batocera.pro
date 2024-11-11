@@ -12,63 +12,38 @@ fetch_chd_list() {
     curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
-# Function to handle the download process with a progress bar
+# Function to download files with a progress bar displayed using dialog
 download_with_progress() {
-    local file
-    local skipped=0
-    local downloaded=0
-    local total_files=0
-
-    # Count the total number of files to download
-    total_files=$(echo "$@" | wc -w)
-
-    # Set up a temporary file to hold the progress info
-    tempfile=$(mktemp)
-
-    # Start the progress bar in dialog
-    dialog --title "Downloading Files" --gauge "Downloading .chd files..." 10 70 0 < "$tempfile" &
-
-    # Download and move files one by one
-    for i in $@; do
-        local filename=$(basename "$i")
+    local files=("$@")
+    local total_files=${#files[@]}
+    local current_file=1
+    local tempfile=$(mktemp)
+    
+    for file in "${files[@]}"; do
+        local filename=$(basename "$file")
         local dest_file="$DEST_DIR/$filename"
         
-        # Skip if the file already exists
+        # Skip if file already exists
         if [[ -f "$dest_file" ]]; then
-            skipped=$((skipped + 1))
+            echo "File '$filename' already exists, skipping..." >> "$tempfile"
             continue
         fi
 
-        # Initialize progress
-        current_progress=0
-        dialog --title "Downloading $filename" --gauge "Downloading: $filename" 10 70 0
+        # Display the progress bar with filename
+        dialog --title "Downloading $filename" --gauge "Downloading file $current_file of $total_files:\n$filename" 10 70 0
 
-        # Download the file using curl with progress
-        curl -L "$BASE_URL$i" -o "$DEST_DIR/$filename" --progress-bar | while read -r line; do
+        # Download file and update progress in real time
+        curl -L "$BASE_URL$file" -o "$dest_file" --progress-bar | while read -r line; do
             if [[ "$line" =~ ([0-9]+)% ]]; then
-                current_progress=${BASH_REMATCH[1]}
-                echo $current_progress
+                percent=${BASH_REMATCH[1]}
+                echo "$percent" | dialog --title "Downloading $filename" --gauge "Downloading file $current_file of $total_files:\n$filename" 10 70
             fi
-        done > "$tempfile"
+        done
 
-        # Wait for download to complete
-        wait $!
-
-        # If the file is a valid .chd file, move it to the destination directory
-        if [[ -f "$DEST_DIR/$filename" && "${filename: -4}" == ".chd" ]]; then
-            downloaded=$((downloaded + 1))
-        else
-            dialog --msgbox "Error downloading file: $i or file is not a .chd" 6 40
-            rm -f "$DEST_DIR/$filename"  # Remove the incorrectly downloaded file
-        fi
-
-        # Update progress in the dialog gauge
-        current_progress=$((downloaded * 100 / total_files))
-        echo $current_progress > "$tempfile"
+        current_file=$((current_file + 1))
     done
 
-    # Return the status of download vs skip
-    echo "$downloaded,$skipped"
+    rm -f "$tempfile"
 }
 
 # Function to refresh the game list with cancellation option
@@ -113,17 +88,10 @@ main() {
         fi
 
         # Download and move selected files
-        result=$(download_with_progress $selections)
-        IFS=',' read -r downloaded skipped <<< "$result"
-
-        # If all files were skipped (already downloaded), return to file selection
-        if [ "$downloaded" -eq 0 ] && [ "$skipped" -gt 0 ]; then
-            dialog --msgbox "All selected files are already downloaded. Returning to the file list." 6 30
-            continue
-        fi
+        download_with_progress $selections
 
         # Display download results
-        dialog --msgbox "Downloaded: $downloaded\nSkipped: $skipped" 10 50
+        dialog --msgbox "Download completed." 10 50
 
         # Ask if user wants to select more files
         dialog --yesno "Would you like to select more files?" 7 50
