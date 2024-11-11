@@ -14,6 +14,7 @@ fetch_chd_list() {
 
 # Function to decode percent-encoded characters
 decode_url() {
+    # Use sed to decode any URL-encoded characters (e.g., %20, %21, etc.)
     echo "$1" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf "%b"
 }
 
@@ -34,65 +35,12 @@ extract_game_titles() {
         # Map the cleaned title to the file
         title_to_file_map["$title"]="$file"
     done
-    declare -p title_to_file_map
-}
 
-# Function to display a filtered list of game titles based on the selection
-display_filtered_list() {
-    local filter=$1
-    dialog_items=()
-
-    for title in "${!title_to_file_map[@]}"; do
-        if [[ $title =~ ^$filter ]]; then
-            dialog_items+=("$title" "" OFF)  # Add title to the list
-        fi
-    done
-
-    # Add a 'Return' button at the top and 'Exit' button at the bottom
-    dialog_items=("Return" "" ON "${dialog_items[@]}" "Exit" "" OFF)
-
-    # Show dialog checklist with filtered items
-    cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
-    selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
-
-    # Handle the user's selections
-    handle_selections "$selections"
-}
-
-# Function to handle selected games
-handle_selections() {
-    local selections=$1
-    # Check if Cancel was pressed
-    if [ $? -eq 1 ]; then
-        dialog --msgbox "Download cancelled." 6 30
-        return_to_main_menu  # Return to the main menu after cancelling
-        return  # Prevent further execution
-    fi
-
-    # If no files are selected, return to the main menu
-    if [ -z "$selections" ]; then
-        return_to_main_menu  # Return to the main menu if no files are selected
-        return  # Prevent further execution
-    fi
-
-    # Convert selected game titles back to filenames using the map
-    selected_files=()
-    for title in $selections; do
-        selected_files+=("${title_to_file_map[$title]}")
-    done
-
-    # Download and move selected files
-    download_with_progress "${selected_files[@]}"
-
-    # Display download results
-    dialog --msgbox "Download completed." 10 50
-
-    # Ask if user wants to select more files
-    dialog --yesno "Would you like to select more files?" 7 50
-    if [ $? -ne 0 ]; then
-        dialog --msgbox "Returning to main menu." 6 30
-        return_to_main_menu  # Return to the main menu if no more files are selected
-    fi
+    # Sort the titles alphabetically while maintaining the full title per line
+    sorted_titles=$(for title in "${!title_to_file_map[@]}"; do echo "$title"; done | sort)
+    
+    # Return the sorted titles
+    echo "$sorted_titles"
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -131,73 +79,71 @@ download_with_progress() {
     rm -f "$tempfile"
 }
 
-# Function to return to the main menu
-return_to_main_menu() {
-    dialog --msgbox "Returning to the main menu..." 6 30
-    show_main_menu  # Call the function that will display the main menu again
+# Function to refresh the game list with cancellation option
+refresh_game_list() {
+    dialog --title "Refresh Game List" --yesno "Would you like to refresh the game list?" 7 50
+    if [ $? -eq 0 ]; then
+        dialog --msgbox "Refreshing game list..." 6 40
+        curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+        dialog --msgbox "Game list refreshed successfully!" 6 40
+    else
+        dialog --msgbox "Game list refresh cancelled." 6 40
+    fi
 }
 
 # Main function to display the dialog interface
-show_main_menu() {
+main() {
     while true; do
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
         
-        # Extract game titles and map them to files
-        eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
+        # Extract game titles and map them to files, and sort them alphabetically
+        sorted_titles=$(extract_game_titles "${files[@]}")  # This will return sorted titles
 
-        # Main menu to choose between All Games or filter by letter/number
-        menu_options=("1" "Show All Games"
-    "2" "All Games That Start with A"
-    "3" "All Games That Start with B"
-    "4" "All Games That Start with C"
-    "5" "All Games That Start with D"
-    "6" "All Games That Start with E"
-    "7" "All Games That Start with F"
-    "8" "All Games That Start with G"
-    "9" "All Games That Start with H"
-    "10" "All Games That Start with I"
-    "11" "All Games That Start with J"
-    "12" "All Games That Start with K"
-    "13" "All Games That Start with L"
-    "14" "All Games That Start with M"
-    "15" "All Games That Start with N"
-    "16" "All Games That Start with O"
-    "17" "All Games That Start with P"
-    "18" "All Games That Start with Q"
-    "19" "All Games That Start with R"
-    "20" "All Games That Start with S"
-    "21" "All Games That Start with T"
-    "22" "All Games That Start with U"
-    "23" "All Games That Start with V"
-    "24" "All Games That Start with W"
-    "25" "All Games That Start with X"
-    "26" "All Games That Start with Y"
-    "27" "All Games That Start with Z"
-    "28" "All Games That Start with a Number"
-    "Exit" "" OFF)
+        # Prepare array for dialog command, using game titles for display
+        dialog_items=()
+        while IFS= read -r title; do
+            dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
+        done <<< "$sorted_titles"
 
-        # Add Return option at the top of the menu
-        cmd=(dialog --menu "Select a filter (or exit)" 22 76 16)
-        filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
+        # Show dialog checklist to select files
+        cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
+        selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
 
-        # Handle menu selection
-        case "$filter_selection" in
-            "Exit")
-                exit 0  # Exit the script
-                ;;
-            "1")  # All Games
-                display_filtered_list ""  # Show all games
-                ;;
-            "28")  # #
-                display_filtered_list "^[0-9]"  # Show only games starting with a number
-                ;;
-            "2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11"|"12"|"13"|"14"|"15"|"16"|"17"|"18"|"19"|"20"|"21"|"22"|"23"|"24"|"25"|"26"|"27")  # A-Z letters
-                display_filtered_list "^${filter_selection}"  # Show games starting with the selected letter
-                ;;
-        esac
+        # Check if Cancel was pressed
+        if [ $? -eq 1 ]; then
+            dialog --msgbox "Download cancelled." 6 30
+            refresh_game_list  # Refresh game list before exiting
+            exit
+        fi
+
+        # If no files are selected, show a message and return to the menu
+        if [ -z "$selections" ]; then
+            dialog --msgbox "No files selected. Returning to the file list." 6 30
+            continue
+        fi
+
+        # Convert selected game titles back to filenames using the map
+        selected_files=()
+        for title in $selections; do
+            selected_files+=("${title_to_file_map[$title]}")
+        done
+
+        # Download and move selected files
+        download_with_progress "${selected_files[@]}"
+
+        # Display download results
+        dialog --msgbox "Download completed." 10 50
+
+        # Ask if user wants to select more files
+        dialog --yesno "Would you like to select more files?" 7 50
+        if [ $? -ne 0 ]; then
+            dialog --msgbox "Exiting." 6 30
+            refresh_game_list  # Refresh game list before exiting
+            break
+        fi
     done
 }
 
 # Run the main function
-show_main_menu
+main
