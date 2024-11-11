@@ -35,11 +35,11 @@ extract_game_titles() {
         # Map the cleaned title to the file
         title_to_file_map["$title"]="$file"
     done
-    
-    # Sort the titles alphabetically and store the result
+
+    # Sort the titles alphabetically and return them
     sorted_titles=$(for title in "${!title_to_file_map[@]}"; do echo "$title"; done | sort)
     
-    # Return the sorted titles and their file mapping
+    # Return the sorted titles
     echo "$sorted_titles"
     declare -p title_to_file_map
 }
