@@ -111,13 +111,11 @@ while true; do
             continue
         fi
 
-        # Create Zenity progress bar for download
-        ( 
-            wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1 | \
-            zenity --progress --title="Downloading $game" --text="Downloading..." --percentage=0 --auto-close --width=500 --height=100
-        )
+        # Run wget and capture output
+        download_output=$(wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1)
         wget_exit_code=$?
 
+        # Check if wget was successful
         if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
             chmod 777 "/tmp/$filename" 2>/dev/null
             mv "/tmp/$filename" "$destination"
@@ -127,12 +125,17 @@ while true; do
             # Set the flag to true if a file was downloaded
             new_file_downloaded=true
         else
+            # Print the wget error message
+            echo "Error: couldn't download game $game"
+            echo "wget exit code: $wget_exit_code"
+            echo "wget error message: $download_output"
+            
+            # Show error message via Zenity or Dialog
             if [ "$use_dialog" = false ]; then
-                zenity --error --text="Error: couldn't download game $game" --width=300
+                zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
             else
-                dialog --msgbox "Error: couldn't download game $game" 20 70
+                dialog --msgbox "Error: couldn't download game $game. \n\nError Message:\n$download_output" 20 70
             fi
-            cat /tmp/.download_log  # Show wget logs in the terminal
         fi
     done
 
