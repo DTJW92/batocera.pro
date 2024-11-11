@@ -94,6 +94,18 @@ while true; do
         filename=$(basename "$game")  # Extract the file name from the URL
         destination="/userdata/roms/psx/$filename"
 
+        # Start Zenity progress bar
+        if [ "$use_dialog" = false ]; then
+            progress_pid=$(zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &)
+        else
+            progress_pid=$(dialog --title "Downloading $game" --gauge "Downloading $game..." 10 70 0 &)
+        fi
+
+        # Update Zenity with initial text
+        if [ "$use_dialog" = false ]; then
+            zenity --progress --text="Attempting to download from: $game_url" --percentage=0 --width=300 --height=100 --auto-close
+        fi
+
         echo "Attempting to download from: '$game_url'"
 
         # Check if the file already exists
@@ -109,13 +121,6 @@ while true; do
         if [[ ! "$game_url" =~ ^https?:// ]]; then
             echo "Error: The URL for $game is not valid (Scheme missing)."
             continue
-        fi
-
-        # Initialize Zenity progress bar
-        if [ "$use_dialog" = false ]; then
-            progress_pid=$(zenity --progress --title="Downloading $game" --text="Downloading..." --percentage=0 --auto-close --width=300 --height=100 &)
-        else
-            progress_pid=$(dialog --title "Downloading $game" --gauge "Downloading..." 10 70 0 &)
         fi
 
         # Run wget and capture output, update progress in Zenity dialog
@@ -164,5 +169,6 @@ while true; do
         else
             dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
         fi
+        sleep 3
     fi
 done
