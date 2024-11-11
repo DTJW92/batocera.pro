@@ -17,8 +17,10 @@ extract_game_titles() {
     local files=("$@")
     declare -A title_to_file_map=()
     for file in "${files[@]}"; do
-        # Strip the .chd extension and decode any HTML entities
-        title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
+        # Strip the .chd extension and decode HTML entities
+        title=$(basename "$file" .chd | \
+            sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g; s/&lpar;/(/g; s/&rpar;/)/g' | \
+            sed 's/([^)]*)//g' | xargs)
         title_to_file_map["$title"]="$file"
     done
     declare -p title_to_file_map
@@ -81,9 +83,9 @@ main() {
         # Extract game titles and map them to files
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
-        # Prepare array for dialog command, using game titles for display
+        # Prepare array for dialog command, sorting titles alphabetically
         dialog_items=()
-        for title in "${!title_to_file_map[@]}"; do
+        for title in $(printf "%s\n" "${!title_to_file_map[@]}" | sort); do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
