@@ -21,7 +21,8 @@ extract_game_titles() {
         title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
         title_to_file_map["$title"]="$file"
     done
-    declare -p title_to_file_map
+    # Return the title-to-file map
+    echo "${!title_to_file_map[@]}"  # Only return the keys (titles) for dialog
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -79,11 +80,11 @@ main() {
         files=($(fetch_chd_list))
         
         # Extract game titles and map them to files
-        eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
+        game_titles=$(extract_game_titles "${files[@]}")
 
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        for title in "${!title_to_file_map[@]}"; do
+        for title in $game_titles; do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
