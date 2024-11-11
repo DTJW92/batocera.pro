@@ -152,7 +152,36 @@ main() {
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
         # Main menu to choose between All Games or filter by letter/number
-        menu_options=("All Games" "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z" "#")
+        menu_options=(
+            "All Games" "All Games"
+            "A" "A"
+            "B" "B"
+            "C" "C"
+            "D" "D"
+            "E" "E"
+            "F" "F"
+            "G" "G"
+            "H" "H"
+            "I" "I"
+            "J" "J"
+            "K" "K"
+            "L" "L"
+            "M" "M"
+            "N" "N"
+            "O" "O"
+            "P" "P"
+            "Q" "Q"
+            "R" "R"
+            "S" "S"
+            "T" "T"
+            "U" "U"
+            "V" "V"
+            "W" "W"
+            "X" "X"
+            "Y" "Y"
+            "Z" "Z"
+            "#" "#"
+        )
         
         cmd=(dialog --menu "Select a filter" 22 76 16)
         filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
