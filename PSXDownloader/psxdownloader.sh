@@ -90,7 +90,9 @@ while true; do
 
         # Remove any previous temporary files
         rm "/tmp/$filename" 2>/dev/null
-        echo "Downloading $game..."
+
+        # Update Zenity progress with the "Downloading" message
+        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &
 
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
