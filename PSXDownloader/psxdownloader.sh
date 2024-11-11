@@ -144,8 +144,35 @@ show_main_menu() {
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
         # Main menu to choose between All Games or filter by letter/number
-        menu_options=("1" "All Games" "2" "A" "3" "B" "4" "C" "5" "D" "6" "E" "7" "F" "8" "G" "9" "H" "10" "I" "11" "J" "12" "K" "13" "L" "14" "M" "15" "N" "16" "O" "17" "P" "18" "Q" "19" "R" "20" "S" "21" "T" "22" "U" "23" "V" "24" "W" "25" "X" "26" "Y" "27" "Z" "28" "#" )
-
+        menu_options=("All Games" "Show All Games"
+    "A" "All Games That Start with A"
+    "B" "All Games That Start with B"
+    "C" "All Games That Start with C"
+    "D" "All Games That Start with D"
+    "E" "All Games That Start with E"
+    "F" "All Games That Start with F"
+    "G" "All Games That Start with G"
+    "H" "All Games That Start with H"
+    "I" "All Games That Start with I"
+    "J" "All Games That Start with J"
+    "K" "All Games That Start with K"
+    "L" "All Games That Start with L"
+    "M" "All Games That Start with M"
+    "N" "All Games That Start with N"
+    "O" "All Games That Start with O"
+    "P" "All Games That Start with P"
+    "Q" "All Games That Start with Q"
+    "R" "All Games That Start with R"
+    "S" "All Games That Start with S"
+    "T" "All Games That Start with T"
+    "U" "All Games That Start with U"
+    "V" "All Games That Start with V"
+    "W" "All Games That Start with W"
+    "X" "All Games That Start with X"
+    "Y" "All Games That Start with Y"
+    "Z" "All Games That Start with Z"
+    "#" "All Games That Start with a Number")
+      
         cmd=(dialog --menu "Select a filter" 22 76 16)
         filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
 
