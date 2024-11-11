@@ -35,6 +35,8 @@ download_and_move() {
         if [[ -f "$filename" ]]; then
             mv "$filename" "$DEST_DIR"
             downloaded=$((downloaded + 1))
+        else
+            dialog --msgbox "Error downloading file: $file" 6 40
         fi
     done
 
