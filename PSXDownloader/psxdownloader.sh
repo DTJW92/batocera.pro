@@ -134,6 +134,5 @@ while true; do
     else
         # Add a 3-second delay before returning to file selection
         zenity --info --text="No new files were downloaded. Press OK to return to selection." --width=300
-        sleep 3
     fi
 done
