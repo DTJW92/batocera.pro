@@ -35,7 +35,13 @@ extract_game_titles() {
         # Map the cleaned title to the file
         title_to_file_map["$title"]="$file"
     done
+    
+    # Sort the titles alphabetically
+    sorted_titles=$(for title in "${!title_to_file_map[@]}"; do echo "$title"; done | sort)
+    
+    # Return the sorted titles and their file mapping
     declare -p title_to_file_map
+    echo "$sorted_titles"
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -92,12 +98,13 @@ main() {
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
         
-        # Extract game titles and map them to files
+        # Extract game titles and map them to files, and sort them alphabetically
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
+        sorted_titles=$(extract_game_titles "${files[@]}" | tail -n 1)
 
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        for title in "${!title_to_file_map[@]}"; do
+        for title in $sorted_titles; do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
