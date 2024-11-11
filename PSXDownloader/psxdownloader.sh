@@ -15,6 +15,9 @@ fetch_chd_list() {
 # Function to handle the download and move process
 download_and_move() {
     local file
+    local skipped=0
+    local downloaded=0
+
     for file in "$@"; do
         local filename=$(basename "$file")
         local dest_file="$DEST_DIR/$filename"
@@ -22,6 +25,7 @@ download_and_move() {
         # Skip if the file already exists
         if [[ -f "$dest_file" ]]; then
             echo "$filename already exists. Skipping..."
+            skipped=$((skipped + 1))
             continue
         fi
 
@@ -33,39 +37,55 @@ download_and_move() {
         if [[ -f "$filename" ]]; then
             mv "$filename" "$DEST_DIR"
             echo "$filename moved to $DEST_DIR"
+            downloaded=$((downloaded + 1))
         else
             echo "Failed to download $filename"
         fi
     done
+
+    # Return the status of download vs skip
+    echo "Downloaded: $downloaded, Skipped: $skipped"
 }
 
 # Main function to display the dialog interface
 main() {
-    # Fetch the list of .chd files
-    files=$(fetch_chd_list)
+    while true; do
+        # Fetch the list of .chd files
+        files=$(fetch_chd_list)
 
-    # Prepare array for dialog command, sorted alphabetically
-    dialog_items=()
-    for file in $files; do
-        dialog_items+=("$file" "" OFF)  # Default to unselected
+        # Prepare array for dialog command, sorted alphabetically
+        dialog_items=()
+        for file in $files; do
+            dialog_items+=("$file" "" OFF)  # Default to unselected
+        done
+
+        # Show dialog checklist to select files
+        cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
+        selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
+
+        # Check if Cancel was pressed
+        if [ $? -eq 1 ]; then
+            echo "Download cancelled."
+            exit
+        fi
+
+        # If no files are selected, show a message and return to the menu
+        if [ -z "$selections" ]; then
+            echo "No files selected. Returning to the file list."
+            continue
+        fi
+
+        # Download and move selected files
+        download_and_move $selections
+
+        # Ask if user wants to select more files
+        echo "Would you like to select more files? (y/n)"
+        read -r response
+        if [[ "$response" != "y" && "$response" != "Y" ]]; then
+            echo "Exiting."
+            break
+        fi
     done
-
-    # Show dialog checklist to select files
-    cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
-    selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
-
-    # Check if Cancel was pressed
-    if [ $? -eq 1 ]; then
-        echo "Download cancelled."
-        exit
-    fi
-
-    # Download and move selected files
-    for selection in $selections; do
-        download_and_move "$selection"
-    done
-
-    echo "All selected files have been downloaded and moved."
 }
 
 # Run the main function
