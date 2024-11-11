@@ -15,15 +15,12 @@ fetch_chd_list() {
 # Function to extract clean, decoded game titles from file names
 extract_game_titles() {
     local files=("$@")
-    local game_titles=()
     declare -A title_to_file_map=()
     for file in "${files[@]}"; do
         # Strip the .chd extension and decode any HTML entities
         title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
-        game_titles+=("$title")
         title_to_file_map["$title"]="$file"
     done
-    echo "${game_titles[@]}"
     declare -p title_to_file_map
 }
 
@@ -82,12 +79,11 @@ main() {
         files=($(fetch_chd_list))
         
         # Extract game titles and map them to files
-        game_titles=($(extract_game_titles "${files[@]}"))
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        for title in "${game_titles[@]}"; do
+        for title in "${!title_to_file_map[@]}"; do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
