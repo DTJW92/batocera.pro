@@ -15,7 +15,7 @@ fetch_chd_list() {
 # Function to decode percent-encoded characters
 decode_url() {
     # Use sed to decode any URL-encoded characters (e.g., %20, %21, etc.)
-    echo "$1" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\x\1/g' | xargs -0 printf "%b"
+    echo "$1" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf "%b"
 }
 
 # Function to extract clean, decoded game titles from file names
