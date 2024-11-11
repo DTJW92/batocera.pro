@@ -62,12 +62,12 @@ handle_selections() {
     # Check if Cancel was pressed
     if [ $? -eq 1 ]; then
         dialog --msgbox "Download cancelled." 6 30
+        refresh_game_list  # Refresh game list before exiting
         exit
     fi
 
-    # If no files are selected, show a message and exit
+    # If no files are selected, exit directly
     if [ -z "$selections" ]; then
-        dialog --msgbox "No files selected. Exiting." 6 30
         exit
     fi
 
@@ -87,6 +87,7 @@ handle_selections() {
     dialog --yesno "Would you like to select more files?" 7 50
     if [ $? -ne 0 ]; then
         dialog --msgbox "Exiting." 6 30
+        refresh_game_list  # Refresh game list before exiting
         exit
     fi
 }
@@ -127,6 +128,18 @@ download_with_progress() {
     rm -f "$tempfile"
 }
 
+# Function to refresh the game list with cancellation option
+refresh_game_list() {
+    dialog --title "Refresh Game List" --yesno "Would you like to refresh the game list?" 7 50
+    if [ $? -eq 0 ]; then
+        dialog --msgbox "Refreshing game list..." 6 40
+        curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+        dialog --msgbox "Game list refreshed successfully!" 6 40
+    else
+        dialog --msgbox "Game list refresh cancelled." 6 40
+    fi
+}
+
 # Main function to display the dialog interface
 main() {
     while true; do
@@ -137,21 +150,53 @@ main() {
         eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
         # Main menu to choose between All Games or filter by letter/number
-        menu_options=("All Games" "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z" "#")
+        menu_options=(
+            "1" "All Games"
+            "2" "A"
+            "3" "B"
+            "4" "C"
+            "5" "D"
+            "6" "E"
+            "7" "F"
+            "8" "G"
+            "9" "H"
+            "10" "I"
+            "11" "J"
+            "12" "K"
+            "13" "L"
+            "14" "M"
+            "15" "N"
+            "16" "O"
+            "17" "P"
+            "18" "Q"
+            "19" "R"
+            "20" "S"
+            "21" "T"
+            "22" "U"
+            "23" "V"
+            "24" "W"
+            "25" "X"
+            "26" "Y"
+            "27" "Z"
+            "28" "#"  # For numbers
+        )
         
+        # Show the menu
         cmd=(dialog --menu "Select a filter" 22 76 16)
         filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
 
         # Handle menu selection
         case "$filter_selection" in
-            "All Games")
+            "1") 
                 display_filtered_list ""  # Show all games
                 ;;
-            "#")
-                display_filtered_list "^[0-9]"  # Show only games starting with a number
+            "28")
+                display_filtered_list "^[0-9]"  # Show games starting with a number
                 ;;
             *)
-                display_filtered_list "^$filter_selection"  # Show games starting with the selected letter
+                # Convert numeric selection to corresponding letter
+                letter=$(echo "$filter_selection" | tr -d -c 'A-Z')
+                display_filtered_list "^$letter"  # Show games starting with the selected letter
                 ;;
         esac
     done
