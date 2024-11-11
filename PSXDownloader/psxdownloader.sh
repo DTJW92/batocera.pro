@@ -48,6 +48,9 @@ display_filtered_list() {
         fi
     done
 
+    # Add a 'Return' button at the top and 'Exit' button at the bottom
+    dialog_items=("Return" "" ON "${dialog_items[@]}" "Exit" "" OFF)
+
     # Show dialog checklist with filtered items
     cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
     selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
@@ -171,13 +174,18 @@ show_main_menu() {
     "25" "All Games That Start with X"
     "26" "All Games That Start with Y"
     "27" "All Games That Start with Z"
-    "28" "All Games That Start with a Number")
+    "28" "All Games That Start with a Number"
+    "Exit" "" OFF)
 
-        cmd=(dialog --menu "Select a filter" 22 76 16)
+        # Add Return option at the top of the menu
+        cmd=(dialog --menu "Select a filter (or exit)" 22 76 16)
         filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
 
         # Handle menu selection
         case "$filter_selection" in
+            "Exit")
+                exit 0  # Exit the script
+                ;;
             "1")  # All Games
                 display_filtered_list ""  # Show all games
                 ;;
