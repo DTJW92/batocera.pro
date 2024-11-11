@@ -44,7 +44,7 @@ display_filtered_list() {
 
     for title in "${!title_to_file_map[@]}"; do
         if [[ $title =~ ^$filter ]]; then
-            dialog_items+=("$title" "" OFF)  # Add title to the list
+            dialog_items+=("$title" "")  # Only the title, leave description empty
         fi
     done
 
