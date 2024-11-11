@@ -14,7 +14,6 @@ fetch_chd_list() {
 
 # Function to decode percent-encoded characters
 decode_url() {
-    # Use sed to decode any URL-encoded characters (e.g., %20, %21, etc.)
     echo "$1" | sed 's/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf "%b"
 }
 
@@ -35,12 +34,64 @@ extract_game_titles() {
         # Map the cleaned title to the file
         title_to_file_map["$title"]="$file"
     done
+    declare -p title_to_file_map
+}
 
-    # Sort the titles alphabetically while maintaining the full title per line
-    sorted_titles=$(for title in "${!title_to_file_map[@]}"; do echo "$title"; done | sort)
-    
-    # Return the sorted titles
-    echo "$sorted_titles"
+# Function to display a filtered list of game titles based on the selection
+display_filtered_list() {
+    local filter=$1
+    dialog_items=()
+
+    for title in "${!title_to_file_map[@]}"; do
+        if [[ $title =~ ^$filter ]]; then
+            dialog_items+=("$title" "")  # Only the title, leave description empty
+        fi
+    done
+
+    # Show dialog checklist with filtered items
+    cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
+    selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
+
+    # Handle the user's selections
+    handle_selections "$selections"
+}
+
+# Function to handle selected games
+handle_selections() {
+    local selections=$1
+
+    # Check if Cancel was pressed (dialog exits with status code 1 on Cancel)
+    if [ $? -eq 1 ]; then
+        dialog --msgbox "Download cancelled." 6 30
+        refresh_game_list  # Refresh game list before exiting
+        exit  # Exit after cancel
+    fi
+
+    # If no files are selected, show a message and return to the menu
+    if [ -z "$selections" ]; then
+        dialog --msgbox "No files selected. Returning to the file list." 6 30
+        return
+    fi
+
+    # Convert selected game titles back to filenames using the map
+    selected_files=()
+    for title in $selections; do
+        selected_files+=("${title_to_file_map[$title]}")
+    done
+
+    # Download and move selected files
+    download_with_progress "${selected_files[@]}"
+
+    # Display download results
+    dialog --msgbox "Download completed." 10 50
+
+    # Ask if user wants to select more files
+    dialog --yesno "Would you like to select more files?" 7 50
+    if [ $? -ne 0 ]; then
+        dialog --msgbox "Exiting." 6 30
+        refresh_game_list  # Refresh game list before exiting
+        exit  # Exit when done
+    fi
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -97,51 +148,62 @@ main() {
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
         
-        # Extract game titles and map them to files, and sort them alphabetically
-        sorted_titles=$(extract_game_titles "${files[@]}")  # This will return sorted titles
+        # Extract game titles and map them to files
+        eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
-        # Prepare array for dialog command, using game titles for display
-        dialog_items=()
-        while IFS= read -r title; do
-            dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
-        done <<< "$sorted_titles"
+        # Main menu to choose between All Games or filter by letter/number
+        menu_options=(
+            "All Games" "All Games"
+            "A" "A"
+            "B" "B"
+            "C" "C"
+            "D" "D"
+            "E" "E"
+            "F" "F"
+            "G" "G"
+            "H" "H"
+            "I" "I"
+            "J" "J"
+            "K" "K"
+            "L" "L"
+            "M" "M"
+            "N" "N"
+            "O" "O"
+            "P" "P"
+            "Q" "Q"
+            "R" "R"
+            "S" "S"
+            "T" "T"
+            "U" "U"
+            "V" "V"
+            "W" "W"
+            "X" "X"
+            "Y" "Y"
+            "Z" "Z"
+            "#" "#"
+        )
+        
+        cmd=(dialog --menu "Select a filter" 22 76 16)
+        filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
 
-        # Show dialog checklist to select files
-        cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
-        selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
-
-        # Check if Cancel was pressed
+        # Check if Cancel was pressed (dialog exits with status code 1 on Cancel)
         if [ $? -eq 1 ]; then
-            dialog --msgbox "Download cancelled." 6 30
-            refresh_game_list  # Refresh game list before exiting
-            exit
-        fi
-
-        # If no files are selected, show a message and return to the menu
-        if [ -z "$selections" ]; then
-            dialog --msgbox "No files selected. Returning to the file list." 6 30
-            continue
-        fi
-
-        # Convert selected game titles back to filenames using the map
-        selected_files=()
-        for title in $selections; do
-            selected_files+=("${title_to_file_map[$title]}")
-        done
-
-        # Download and move selected files
-        download_with_progress "${selected_files[@]}"
-
-        # Display download results
-        dialog --msgbox "Download completed." 10 50
-
-        # Ask if user wants to select more files
-        dialog --yesno "Would you like to select more files?" 7 50
-        if [ $? -ne 0 ]; then
             dialog --msgbox "Exiting." 6 30
-            refresh_game_list  # Refresh game list before exiting
-            break
+            exit  # Exit on Cancel from the main menu
         fi
+
+        # Handle menu selection
+        case "$filter_selection" in
+            "All Games")
+                display_filtered_list ""  # Show all games
+                ;;
+            "#")
+                display_filtered_list "^[0-9]"  # Show only games starting with a number
+                ;;
+            *)
+                display_filtered_list "^$filter_selection"  # Show games starting with the selected letter
+                ;;
+        esac
     done
 }
 
