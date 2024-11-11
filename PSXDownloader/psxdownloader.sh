@@ -39,30 +39,32 @@ download_with_progress() {
             continue
         fi
 
-        # Download the file using curl with a progress bar
-        {
-            echo "XXX" # First line to initialize the progress bar
-            curl -L "$BASE_URL$i" -o "$filename" --progress-bar | while IFS= read -r line; do
-                # Update the progress bar every time progress is shown
-                echo $line
-            done
-        } > "$tempfile" &
+        # Initialize progress
+        current_progress=0
+        dialog --title "Downloading $filename" --gauge "Downloading: $filename" 10 70 0
+
+        # Download the file using curl with progress
+        curl -L "$BASE_URL$i" -o "$DEST_DIR/$filename" --progress-bar | while read -r line; do
+            if [[ "$line" =~ ([0-9]+)% ]]; then
+                current_progress=${BASH_REMATCH[1]}
+                echo $current_progress
+            fi
+        done > "$tempfile"
 
         # Wait for download to complete
         wait $!
 
         # If the file is a valid .chd file, move it to the destination directory
-        if [[ -f "$filename" && "${filename: -4}" == ".chd" ]]; then
-            mv "$filename" "$DEST_DIR"
+        if [[ -f "$DEST_DIR/$filename" && "${filename: -4}" == ".chd" ]]; then
             downloaded=$((downloaded + 1))
         else
             dialog --msgbox "Error downloading file: $i or file is not a .chd" 6 40
-            rm -f "$filename"  # Remove the incorrectly downloaded file
+            rm -f "$DEST_DIR/$filename"  # Remove the incorrectly downloaded file
         fi
 
         # Update progress in the dialog gauge
         current_progress=$((downloaded * 100 / total_files))
-        echo $current_progress
+        echo $current_progress > "$tempfile"
     done
 
     # Return the status of download vs skip
