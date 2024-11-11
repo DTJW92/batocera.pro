@@ -12,14 +12,16 @@ fetch_chd_list() {
     curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
-# Function to extract clean game names from file names
-extract_game_names() {
+# Function to extract clean, decoded game names from file names
+extract_game_titles() {
     local files=("$@")
-    local game_names=()
+    local game_titles=()
     for file in "${files[@]}"; do
-        game_names+=("$(basename "$file" .chd)")  # Strip .chd extension
+        # Strip the .chd extension and decode any HTML entities
+        title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
+        game_titles+=("$title")
     done
-    echo "${game_names[@]}"
+    echo "${game_titles[@]}"
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -75,12 +77,12 @@ main() {
     while true; do
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
-        game_names=($(extract_game_names "${files[@]}"))
+        game_titles=($(extract_game_titles "${files[@]}"))
 
-        # Prepare array for dialog command, using game names for display
+        # Prepare array for dialog command, using game titles for display
         dialog_items=()
         for i in "${!files[@]}"; do
-            dialog_items+=("${files[i]}" "${game_names[i]}" OFF)  # Use game name without extension
+            dialog_items+=("${files[i]}" "${game_titles[i]}" OFF)  # Use game title only, hide file name
         done
 
         # Show dialog checklist to select files
