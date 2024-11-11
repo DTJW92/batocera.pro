@@ -63,11 +63,13 @@ handle_selections() {
     if [ $? -eq 1 ]; then
         dialog --msgbox "Download cancelled." 6 30
         return_to_main_menu  # Return to the main menu after cancelling
+        return  # Prevent further execution
     fi
 
     # If no files are selected, return to the main menu
     if [ -z "$selections" ]; then
         return_to_main_menu  # Return to the main menu if no files are selected
+        return  # Prevent further execution
     fi
 
     # Convert selected game titles back to filenames using the map
@@ -130,18 +132,6 @@ download_with_progress() {
 return_to_main_menu() {
     dialog --msgbox "Returning to the main menu..." 6 30
     show_main_menu  # Call the function that will display the main menu again
-}
-
-# Function to refresh the game list with cancellation option
-refresh_game_list() {
-    dialog --title "Refresh Game List" --yesno "Would you like to refresh the game list?" 7 50
-    if [ $? -eq 0 ]; then
-        dialog --msgbox "Refreshing game list..." 6 40
-        curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
-        dialog --msgbox "Game list refreshed successfully!" 6 40
-    else
-        dialog --msgbox "Game list refresh cancelled." 6 40
-    fi
 }
 
 # Main function to display the dialog interface
