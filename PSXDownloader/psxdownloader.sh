@@ -1,162 +1,86 @@
 #!/bin/bash
 
-# Check if Zenity is installed, and fall back to dialog if not found
-check_zenity_installed() {
-    if ! command -v zenity &> /dev/null; then
-        echo "Zenity not found. Falling back to dialog."
-        use_dialog=true
-    else
-        echo "Zenity is installed."
-        use_dialog=false
-    fi
+# URL of the directory containing the .chd files
+BASE_URL="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
+DEST_DIR="/userdata/roms/psx"
+
+# Create the destination directory if it doesn't exist
+mkdir -p "$DEST_DIR"
+
+# Function to fetch and filter .chd file list
+fetch_chd_list() {
+    curl -s "$BASE_URL" | grep -oP 'href="([^"]+\.chd)"' | sed 's/href="\([^"]\+\)"/\1/' | sort
 }
 
-# Run the check for Zenity installation
-check_zenity_installed
-
-clear
-if [ "$use_dialog" = false ]; then
-    zenity --info --title="Notice" --text="Note: Batocera.Pro is deprecated and going archived. Support is no longer available." --width=300
-else
-    dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
-fi
-clear
-
-# Function to display animated title with colors (No Zenity equivalent for animation, keeping this terminal-based)
-animate_title() {
-    local text="BATOCERA PSX DOWNLOADER"
-    local delay=0.03
-    local length=${#text}
-
-    echo -ne "\e[1;36m"  # Set color to cyan
-    for (( i=0; i<length; i++ )); do
-        echo -n "${text:i:1}"
-        sleep $delay
-    done
-    echo -e "\e[0m"  # Reset color
+# Display the file list with an option to filter by starting letter
+filter_files() {
+    local filter="$1"
+    fetch_chd_list | grep -i "^$filter"
 }
 
-# Fetch list of game files from the URL and create a checklist
-url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
-game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
+# Function to handle the download and move process
+download_and_move() {
+    local file
+    for file in "$@"; do
+        local filename=$(basename "$file")
+        local dest_file="$DEST_DIR/$filename"
+        
+        # Skip if the file already exists
+        if [[ -f "$dest_file" ]]; then
+            echo "$filename already exists. Skipping..."
+            continue
+        fi
 
-if [ ${#game_list[@]} -eq 0 ]; then
-    if [ "$use_dialog" = false ]; then
-        zenity --error --text="No games found at $url" --width=300
-    else
-        dialog --msgbox "No games found at $url" 20 70
-    fi
-    exit 1
-fi
-
-# Prepare array for dialog/zenity command, sorted by game name
-declare -A games
-for game in "${game_list[@]}"; do
-    games["$game"]="$url$game"
-done
-
-# Prepare array for checklist
-game_choices=()
-for game in $(printf "%s\n" "${!games[@]}" | sort); do
-    game_choices+=("$game" "" OFF)
-done
-
-# Flag to track if any new file was downloaded
-new_file_downloaded=false
-
-# Main loop: Show file selection and download process
-while true; do
-    if [ "$use_dialog" = false ]; then
-        # Show Zenity checklist for game selection
-        selected_games=$(zenity --list --checklist --title="Select PSX games to install" --column="Select" --column="Game" "${game_choices[@]}" --width=500 --height=400 --multiple)
-    else
-        # Show Dialog checklist for game selection
-        selected_games=$(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16 "${game_choices[@]}" 2>&1 >/dev/tty)
-    fi
-
-    # Check if Cancel was pressed (Zenity returns an empty string on Cancel)
-    if [ -z "$selected_games" ]; then
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="Installation cancelled." --width=300
+        # Download and move the file
+        echo "Downloading $filename..."
+        curl -O "$BASE_URL$file"
+        
+        # Check if the file was successfully downloaded
+        if [[ -f "$filename" ]]; then
+            mv "$filename" "$DEST_DIR"
+            echo "$filename moved to $DEST_DIR"
         else
-            dialog --msgbox "Installation cancelled." 20 70
-        fi
-        exit
-    fi
-
-    # Reset the flag for new file download
-    new_file_downloaded=false
-
-    # Install selected games
-    IFS='|'  # Zenity uses | to separate selected items
-    for game in $selected_games; do
-        game_url="${games[$game]}"
-        filename=$(basename "$game")  # Extract the file name from the URL
-        destination="/userdata/roms/psx/$filename"
-
-        echo "Attempting to download from: '$game_url'"
-
-        # Check if the file already exists
-        if [ -f "$destination" ]; then
-            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-            continue  # Skip to the next game
-        fi
-
-        rm "/tmp/$filename" 2>/dev/null
-        echo "Downloading $game..."
-
-        # Check if the URL is valid
-        if [[ ! "$game_url" =~ ^https?:// ]]; then
-            echo "Error: The URL for $game is not valid (Scheme missing)."
-            continue  # Skip to the next game
-        fi
-
-        # Run wget and capture output
-        download_output=$(wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1)
-        wget_exit_code=$?
-
-        # Check if wget was successful
-        if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
-            chmod 777 "/tmp/$filename" 2>/dev/null
-            mv "/tmp/$filename" "$destination"
-            clear
-            echo -e "\n\n$game installation complete.\n\n"
-
-            # Set the flag to true if a file was downloaded
-            new_file_downloaded=true
-        else
-            # Print the wget error message
-            echo "Error: couldn't download game $game"
-            echo "wget exit code: $wget_exit_code"
-            echo "wget error message: $download_output"
-            
-            # Show error message via Zenity or Dialog
-            if [ "$use_dialog" = false ]; then
-                zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
-            else
-                dialog --msgbox "Error: couldn't download game $game. \n\nError Message:\n$download_output" 20 70
-            fi
+            echo "Failed to download $filename"
         fi
     done
+}
 
-    # Reload ES after installations
-    curl http://127.0.0.1:1234/reloadgames
+# Main function to allow user interaction
+main() {
+    echo "Select the starting letter to filter files or press Enter to show all:"
+    read -r filter
 
-    # Exit the loop only if a new file was downloaded
-    if $new_file_downloaded; then
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="Exiting after successful download." --width=300
-        else
-            dialog --msgbox "Exiting after successful download." 20 70
-        fi
-        exit
-    else
-        # Add a 3-second delay before returning to file selection
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="No new files were downloaded. Returning to file selection in 3 seconds..." --width=300
-        else
-            dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
-        fi
-        sleep 3  # Added delay before continuing the loop
+    # Show the filtered file list
+    files=$(filter_files "$filter")
+
+    # Display the files
+    echo "Available games:"
+    echo "$files"
+
+    if [[ -z "$files" ]]; then
+        echo "No games found matching the filter."
+        exit 1
     fi
-done
+
+    # Ask for selection
+    echo "Enter the game numbers you want to download (separate with spaces):"
+    select_option=$(echo "$files" | nl)
+
+    echo "$select_option"
+    
+    # Prompt user to select the files by number
+    echo "Enter numbers of games to download, separated by spaces:"
+    read -r selected_numbers
+
+    # Create an array from selected numbers and map to the corresponding files
+    selected_files=()
+    for number in $selected_numbers; do
+        selected_files+=($(echo "$files" | sed -n "${number}p"))
+    done
+
+    # Download and move selected files
+    download_and_move "${selected_files[@]}"
+}
+
+# Run the script
+main
