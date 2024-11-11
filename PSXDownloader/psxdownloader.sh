@@ -24,27 +24,22 @@ download_and_move() {
         
         # Skip if the file already exists
         if [[ -f "$dest_file" ]]; then
-            echo "$filename already exists. Skipping..."
             skipped=$((skipped + 1))
             continue
         fi
 
         # Download and move the file
-        echo "Downloading $filename..."
         curl -O "$BASE_URL$file"
         
         # Check if the file was successfully downloaded
         if [[ -f "$filename" ]]; then
             mv "$filename" "$DEST_DIR"
-            echo "$filename moved to $DEST_DIR"
             downloaded=$((downloaded + 1))
-        else
-            echo "Failed to download $filename"
         fi
     done
 
     # Return the status of download vs skip
-    echo "Downloaded: $downloaded, Skipped: $skipped"
+    echo "$downloaded,$skipped"
 }
 
 # Main function to display the dialog interface
@@ -65,24 +60,33 @@ main() {
 
         # Check if Cancel was pressed
         if [ $? -eq 1 ]; then
-            echo "Download cancelled."
+            dialog --msgbox "Download cancelled." 6 30
             exit
         fi
 
         # If no files are selected, show a message and return to the menu
         if [ -z "$selections" ]; then
-            echo "No files selected. Returning to the file list."
+            dialog --msgbox "No files selected. Returning to the file list." 6 30
             continue
         fi
 
         # Download and move selected files
-        download_and_move $selections
+        result=$(download_and_move $selections)
+        IFS=',' read -r downloaded skipped <<< "$result"
+
+        # If all files were skipped (already downloaded), return to file selection
+        if [ "$downloaded" -eq 0 ]; then
+            dialog --msgbox "All selected files are already downloaded. Returning to the file list." 6 30
+            continue
+        fi
+
+        # Display download results
+        dialog --msgbox "Downloaded: $downloaded\nSkipped: $skipped" 10 50
 
         # Ask if user wants to select more files
-        echo "Would you like to select more files? (y/n)"
-        read -r response
-        if [[ "$response" != "y" && "$response" != "Y" ]]; then
-            echo "Exiting."
+        dialog --yesno "Would you like to select more files?" 7 50
+        if [ $? -ne 0 ]; then
+            dialog --msgbox "Exiting." 6 30
             break
         fi
     done
