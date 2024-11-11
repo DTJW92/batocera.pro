@@ -43,6 +43,60 @@ extract_game_titles() {
     echo "$sorted_titles"
 }
 
+# Function to filter titles by the first letter or number
+filter_by_letter_or_number() {
+    local titles=("$@")
+    dialog --title "Filter Games by Letter or Number" --menu "Select a letter or number to filter by:" 15 50 28 \
+        A "A" \
+        B "B" \
+        C "C" \
+        D "D" \
+        E "E" \
+        F "F" \
+        G "G" \
+        H "H" \
+        I "I" \
+        J "J" \
+        K "K" \
+        L "L" \
+        M "M" \
+        N "N" \
+        O "O" \
+        P "P" \
+        Q "Q" \
+        R "R" \
+        S "S" \
+        T "T" \
+        U "U" \
+        V "V" \
+        W "W" \
+        X "X" \
+        Y "Y" \
+        Z "Z" \
+        "#" "Numbers" 2>&1 >/dev/tty
+    letter_or_number=$?
+
+    # Filter titles by the selected letter or number (case-insensitive)
+    filtered_titles=()
+    if [[ "$letter_or_number" == "#" ]]; then
+        # Filter by numbers
+        for title in "${titles[@]}"; do
+            if [[ "${title:0:1}" =~ [0-9] ]]; then
+                filtered_titles+=("$title")
+            fi
+        done
+    else
+        # Filter by letters
+        for title in "${titles[@]}"; do
+            if [[ "${title,,}" =~ ^$letter_or_number ]]; then
+                filtered_titles+=("$title")
+            fi
+        done
+    fi
+
+    echo "${filtered_titles[@]}"
+}
+
 # Function to download files with a progress bar displayed using dialog
 download_with_progress() {
     local files=("$@")
@@ -100,11 +154,14 @@ main() {
         # Extract game titles and map them to files, and sort them alphabetically
         sorted_titles=$(extract_game_titles "${files[@]}")  # This will return sorted titles
 
+        # Ask user to filter by letter or number
+        sorted_titles=($(filter_by_letter_or_number "${sorted_titles[@]}"))
+
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        while IFS= read -r title; do
+        for title in "${sorted_titles[@]}"; do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
-        done <<< "$sorted_titles"
+        done
 
         # Show dialog checklist to select files
         cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
