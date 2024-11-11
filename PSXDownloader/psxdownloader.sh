@@ -1,24 +1,5 @@
 #!/bin/bash
 
-# Check if Zenity is installed, and fall back to error message if not found
-check_zenity_installed() {
-    if ! command -v zenity &> /dev/null; then
-        echo "Zenity not found. Exiting script."
-        exit 1
-    else
-        echo "Zenity is installed."
-    fi
-}
-
-# Run the check for Zenity installation
-check_zenity_installed
-
-clear
-# Display notice about Batocera.Pro deprecation
-zenity --info --title="Notice" --text="Note: Batocera.Pro is deprecated and going archived. Support is no longer available." --width=300
-
-clear
-
 # Function to display animated title with colors (No Zenity equivalent for animation, keeping this terminal-based)
 animate_title() {
     local text="BATOCERA PSX DOWNLOADER"
