@@ -9,7 +9,8 @@ mkdir -p "$DEST_DIR"
 
 # Function to fetch and filter .chd file list
 fetch_chd_list() {
-    curl -s "$BASE_URL" | grep -oP 'href="([^"]+\.chd)"' | sed 's/href="\([^"]\+\)"/\1/' | sort
+    # Fetch the list of files and get direct links to the .chd files
+    curl -Ls "$BASE_URL" | grep -oP 'href="([^"]+\.chd)"' | sed 's/href="\([^"]\+\)"/\1/' | sort
 }
 
 # Function to handle the download and move process
@@ -28,15 +29,16 @@ download_and_move() {
             continue
         fi
 
-        # Download the file directly
-        curl -O "${BASE_URL}${file}"
+        # Download the file directly with the -L flag to follow redirects
+        curl -LO "${BASE_URL}${file}"
         
-        # Check if the file was successfully downloaded
-        if [[ -f "$filename" ]]; then
+        # Check if the file was successfully downloaded and is not an HTML document
+        if [[ -f "$filename" && "${filename: -4}" == ".chd" ]]; then
             mv "$filename" "$DEST_DIR"
             downloaded=$((downloaded + 1))
         else
-            dialog --msgbox "Error downloading file: $file" 6 40
+            dialog --msgbox "Error downloading file: $file or file is not a .chd" 6 40
+            rm -f "$filename"  # Remove the incorrectly downloaded file
         fi
     done
 
