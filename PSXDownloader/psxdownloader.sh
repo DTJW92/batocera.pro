@@ -7,10 +7,10 @@ DEST_DIR="/userdata/roms/psx"
 # Create the destination directory if it doesn't exist
 mkdir -p "$DEST_DIR"
 
-# Function to fetch and filter .chd file list
+# Function to fetch and filter .chd file list using improved grep pattern
 fetch_chd_list() {
-    # Fetch the list of files and get direct links to the .chd files
-    curl -Ls "$BASE_URL" | grep -oP 'href="([^"]+\.chd)"' | sed 's/href="\([^"]\+\)"/\1/' | sort
+    # Fetch the page content, extract only .chd file links, and ensure they're valid
+    curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
 # Function to handle the download and move process
