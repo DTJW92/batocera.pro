@@ -99,7 +99,7 @@ while true; do
         # Check if the file already exists
         if [ -f "$destination" ]; then
             echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-            continue
+            continue  # Skip to the next game
         fi
 
         rm "/tmp/$filename" 2>/dev/null
@@ -108,7 +108,7 @@ while true; do
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
             echo "Error: The URL for $game is not valid (Scheme missing)."
-            continue
+            continue  # Skip to the next game
         fi
 
         # Run wget and capture output
@@ -157,5 +157,6 @@ while true; do
         else
             dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
         fi
+        sleep 3  # Added delay before continuing the loop
     fi
 done
