@@ -46,7 +46,7 @@ extract_game_titles() {
 # Function to filter titles by the first letter or number
 filter_by_letter_or_number() {
     local titles=("$@")
-    dialog --title "Filter Games by Letter or Number" --menu "Select a letter or number to filter by:" 15 50 28 \
+    letter_or_number=$(dialog --title "Filter Games by Letter or Number" --menu "Select a letter or number to filter by:" 15 50 28 \
         A "A" \
         B "B" \
         C "C" \
@@ -73,8 +73,7 @@ filter_by_letter_or_number() {
         X "X" \
         Y "Y" \
         Z "Z" \
-        "#" "Numbers" 2>&1 >/dev/tty
-    letter_or_number=$?
+        "#" "Numbers" 2>&1 >/dev/tty)
 
     # Filter titles by the selected letter or number (case-insensitive)
     filtered_titles=()
@@ -152,7 +151,7 @@ main() {
         files=($(fetch_chd_list))
         
         # Extract game titles and map them to files, and sort them alphabetically
-        sorted_titles=$(extract_game_titles "${files[@]}")  # This will return sorted titles
+        sorted_titles=($(extract_game_titles "${files[@]}"))
 
         # Ask user to filter by letter or number
         sorted_titles=($(filter_by_letter_or_number "${sorted_titles[@]}"))
@@ -160,8 +159,8 @@ main() {
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
         for title in "${sorted_titles[@]}"; do
-            # Quote the title to ensure it is passed as a single string
-            dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
+            # Ensure each title is passed as a single string, keeping it intact
+            dialog_items+=("$title" "" OFF)
         done
 
         # Show dialog checklist to select files
