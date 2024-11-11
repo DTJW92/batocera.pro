@@ -1,10 +1,15 @@
 #!/bin/bash
 
-# Function to fetch .chd file list from the given URL
+# URL of the directory containing the .chd files
+BASE_URL="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
+DEST_DIR="/userdata/roms/psx"
+
+# Create the destination directory if it doesn't exist
+mkdir -p "$DEST_DIR"
+
+# Function to fetch and filter .chd file list
 fetch_chd_list() {
-    curl -s "https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/" | \
-        grep -oP 'href="\K[^"]*' | \
-        grep -E "\.chd$"
+    curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
 # Function to extract clean, decoded game titles from file names
@@ -12,79 +17,112 @@ extract_game_titles() {
     local files=("$@")
     declare -A title_to_file_map=()
     for file in "${files[@]}"; do
-        # Strip the .chd extension, decode HTML entities, clean up, and remove content within parentheses
-        title=$(basename "$file" .chd | \
-            sed 's/%20/ /g; s/%28/(/g; s/%29/)/g' | \
-            sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g' | \
-            sed 's/([^)]*)//g' | \
-            tr -s ' ' )  # This will replace multiple spaces with a single space and remove leading/trailing spaces
-
+        # Strip the .chd extension and decode any HTML entities
+        title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
         title_to_file_map["$title"]="$file"
     done
-
-    # Sort titles alphabetically and prepare for dialog
-    for title in $(echo "${!title_to_file_map[@]}" | tr ' ' '\n' | sort); do
-        # Pass the title and file as a single line in the correct format for dialog
-        echo "$title" "${title_to_file_map[$title]}" off
-    done
+    declare -p title_to_file_map
 }
 
-# Function to download files, skipping existing ones
-download_files() {
+# Function to download files with a progress bar displayed using dialog
+download_with_progress() {
     local files=("$@")
-    for file in "${files[@]}"; do
-        game_title=$(basename "$file" .chd)
-        game_title=$(echo "$game_title" | sed 's/%20/ /g; s/%28/(/g; s/%29/)/g' | \
-            sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/&apos;/'\''/g' | \
-            sed 's/([^)]*)//g' | tr -s ' ')
+    local total_files=${#files[@]}
+    local current_file=1
+    local tempfile=$(mktemp)
 
-        # Check if the file already exists
-        if [ -e "/userdata/roms/psx/$game_title.chd" ]; then
-            echo "$game_title already exists, skipping download."
-        else
-            # Show progress with dialog
-            dialog --title "Downloading $game_title" --gauge "Downloading $game_title..." 10 70 0
-            curl -s -O "https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/$file"  # Download file
-            mv "$file" "/userdata/roms/psx/$game_title.chd"  # Move to correct folder
-            dialog --title "Download Complete" --msgbox "$game_title has been downloaded!" 5 30
+    for file in "${files[@]}"; do
+        local filename=$(basename "$file")
+        local dest_file="$DEST_DIR/$filename"
+        
+        # Check if the file already exists and skip if so
+        if [[ -f "$dest_file" ]]; then
+            echo "File '$filename' already exists, skipping..." >> "$tempfile"
+            dialog --title "Skipping $filename" --infobox "File already exists, skipping: $filename" 7 50
+            sleep 1  # Short pause for the message to be visible
+            continue
         fi
+
+        # Display the progress bar with filename
+        dialog --title "Downloading $filename" --gauge "Downloading file $current_file of $total_files:\n$filename" 10 70 0
+
+        # Download file and update progress in real time
+        curl -L "$BASE_URL$file" -o "$dest_file" --progress-bar | while read -r line; do
+            if [[ "$line" =~ ([0-9]+)% ]]; then
+                percent=${BASH_REMATCH[1]}
+                echo "$percent" | dialog --title "Downloading $filename" --gauge "Downloading file $current_file of $total_files:\n$filename" 10 70
+            fi
+        done
+
+        current_file=$((current_file + 1))
     done
+
+    rm -f "$tempfile"
 }
 
-# Main function
+# Function to refresh the game list with cancellation option
+refresh_game_list() {
+    dialog --title "Refresh Game List" --yesno "Would you like to refresh the game list?" 7 50
+    if [ $? -eq 0 ]; then
+        dialog --msgbox "Refreshing game list..." 6 40
+        curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+        dialog --msgbox "Game list refreshed successfully!" 6 40
+    else
+        dialog --msgbox "Game list refresh cancelled." 6 40
+    fi
+}
+
+# Main function to display the dialog interface
 main() {
     while true; do
         # Fetch the list of .chd files
-        files=$(fetch_chd_list)
-        if [ -z "$files" ]; then
-            dialog --msgbox "No CHD files found." 10 50
-            return
+        files=($(fetch_chd_list))
+        
+        # Extract game titles and map them to files
+        eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
+
+        # Prepare array for dialog command, using game titles for display
+        dialog_items=()
+        for title in "${!title_to_file_map[@]}"; do
+            dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
+        done
+
+        # Show dialog checklist to select files
+        cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
+        selections=$("${cmd[@]}" "${dialog_items[@]}" 2>&1 >/dev/tty)
+
+        # Check if Cancel was pressed
+        if [ $? -eq 1 ]; then
+            dialog --msgbox "Download cancelled." 6 30
+            refresh_game_list  # Refresh game list before exiting
+            exit
         fi
 
-        # Extract the game titles from the file names
-        game_titles=$(extract_game_titles $files)
+        # If no files are selected, show a message and return to the menu
+        if [ -z "$selections" ]; then
+            dialog --msgbox "No files selected. Returning to the file list." 6 30
+            continue
+        fi
 
-        # Let the user select games
-        selected_titles=$(dialog --title "Select Games" --checklist \
-            "Select the games to download:" 15 60 8 \
-            $game_titles 2>&1 >/dev/tty)
+        # Convert selected game titles back to filenames using the map
+        selected_files=()
+        for title in $selections; do
+            selected_files+=("${title_to_file_map[$title]}")
+        done
 
-        # Check if user canceled
-        if [ $? -eq 1 ]; then
+        # Download and move selected files
+        download_with_progress "${selected_files[@]}"
+
+        # Display download results
+        dialog --msgbox "Download completed." 10 50
+
+        # Ask if user wants to select more files
+        dialog --yesno "Would you like to select more files?" 7 50
+        if [ $? -ne 0 ]; then
+            dialog --msgbox "Exiting." 6 30
+            refresh_game_list  # Refresh game list before exiting
             break
         fi
-
-        # Download the selected files
-        download_files $selected_titles
-
-        # Ask if the user wants to refresh the game list or exit
-        response=$(dialog --title "Update Game List" --yesno "Do you want to refresh the game list?" 7 60)
-        if [ $? -eq 0 ]; then
-            curl http://127.0.0.1:1234/reloadgames  # Refresh game list in Batocera
-        fi
-
-        # Exit the loop
-        break
     done
 }
 
