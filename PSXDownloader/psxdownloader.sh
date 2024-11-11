@@ -44,6 +44,13 @@ download_and_move() {
     echo "$downloaded,$skipped"
 }
 
+# Function to refresh the game list
+refresh_game_list() {
+    dialog --msgbox "Refreshing game list..." 6 40
+    sleep 1  # Simulate refreshing
+    curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+}
+
 # Main function to display the dialog interface
 main() {
     while true; do
@@ -63,6 +70,7 @@ main() {
         # Check if Cancel was pressed
         if [ $? -eq 1 ]; then
             dialog --msgbox "Download cancelled." 6 30
+            refresh_game_list  # Refresh game list before exiting
             exit
         fi
 
@@ -89,6 +97,7 @@ main() {
         dialog --yesno "Would you like to select more files?" 7 50
         if [ $? -ne 0 ]; then
             dialog --msgbox "Exiting." 6 30
+            refresh_game_list  # Refresh game list before exiting
             break
         fi
     done
