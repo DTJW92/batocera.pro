@@ -59,11 +59,12 @@ display_filtered_list() {
 # Function to handle selected games
 handle_selections() {
     local selections=$1
-    # Check if Cancel was pressed
+
+    # Check if Cancel was pressed (dialog exits with status code 1 on Cancel)
     if [ $? -eq 1 ]; then
         dialog --msgbox "Download cancelled." 6 30
         refresh_game_list  # Refresh game list before exiting
-        exit
+        exit  # Exit after cancel
     fi
 
     # If no files are selected, show a message and return to the menu
@@ -89,7 +90,7 @@ handle_selections() {
     if [ $? -ne 0 ]; then
         dialog --msgbox "Exiting." 6 30
         refresh_game_list  # Refresh game list before exiting
-        exit
+        exit  # Exit when done
     fi
 }
 
@@ -155,6 +156,12 @@ main() {
         
         cmd=(dialog --menu "Select a filter" 22 76 16)
         filter_selection=$("${cmd[@]}" "${menu_options[@]}" 2>&1 >/dev/tty)
+
+        # Check if Cancel was pressed (dialog exits with status code 1 on Cancel)
+        if [ $? -eq 1 ]; then
+            dialog --msgbox "Exiting." 6 30
+            exit  # Exit on Cancel from the main menu
+        fi
 
         # Handle menu selection
         case "$filter_selection" in
