@@ -28,8 +28,8 @@ download_and_move() {
             continue
         fi
 
-        # Download and move the file
-        curl -O "$BASE_URL$file"
+        # Download the file directly
+        curl -O "${BASE_URL}${file}"
         
         # Check if the file was successfully downloaded
         if [[ -f "$filename" ]]; then
@@ -44,11 +44,16 @@ download_and_move() {
     echo "$downloaded,$skipped"
 }
 
-# Function to refresh the game list
+# Function to refresh the game list with cancellation option
 refresh_game_list() {
-    dialog --msgbox "Refreshing game list..." 6 40
-    sleep 1  # Simulate refreshing
-    curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+    dialog --title "Refresh Game List" --yesno "Would you like to refresh the game list?" 7 50
+    if [ $? -eq 0 ]; then
+        dialog --msgbox "Refreshing game list..." 6 40
+        curl http://127.0.0.1:1234/reloadgames  # Reload the games list in Batocera
+        dialog --msgbox "Game list refreshed successfully!" 6 40
+    else
+        dialog --msgbox "Game list refresh cancelled." 6 40
+    fi
 }
 
 # Main function to display the dialog interface
