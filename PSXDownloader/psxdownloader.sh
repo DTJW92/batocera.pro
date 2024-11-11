@@ -160,6 +160,7 @@ main() {
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
         for title in "${sorted_titles[@]}"; do
+            # Quote the title to ensure it is passed as a single string
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
