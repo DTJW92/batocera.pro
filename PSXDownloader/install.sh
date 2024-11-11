@@ -41,3 +41,7 @@ curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloa
 
 # Download BatoceraPRO.sh.keys to /userdata/roms/ports
 wget  https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -o /userdata/roms/ports/PSXDownloader.sh.keys
+
+
+chmod +x PSXDownloader.sh
+
