@@ -41,7 +41,6 @@ extract_game_titles() {
     
     # Return the sorted titles
     echo "$sorted_titles"
-    declare -p title_to_file_map
 }
 
 # Function to download files with a progress bar displayed using dialog
