@@ -18,14 +18,16 @@ download_with_progress() {
     local total_files=${#files[@]}
     local current_file=1
     local tempfile=$(mktemp)
-    
+
     for file in "${files[@]}"; do
         local filename=$(basename "$file")
         local dest_file="$DEST_DIR/$filename"
         
-        # Skip if file already exists
+        # Check if the file already exists and skip if so
         if [[ -f "$dest_file" ]]; then
             echo "File '$filename' already exists, skipping..." >> "$tempfile"
+            dialog --title "Skipping $filename" --infobox "File already exists, skipping: $filename" 7 50
+            sleep 1  # Short pause for the message to be visible
             continue
         fi
 
