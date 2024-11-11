@@ -101,22 +101,27 @@ while true; do
             progress_pid=$(dialog --title "Downloading $game" --gauge "Downloading $game..." 10 70 0 &)
         fi
 
-        # Update Zenity with initial text
-        if [ "$use_dialog" = false ]; then
-            zenity --progress --text="Attempting to download from: $game_url" --percentage=0 --width=300 --height=100 --auto-close
-        fi
+# Start Zenity progress bar with initial text (without progress value yet)
+if [ "$use_dialog" = false ]; then
+    progress_pid=$(zenity --progress --title="Downloading $game" --text="Attempting to download from: $game_url" --percentage=0 --auto-close --width=300 --height=100 &)
+else
+    progress_pid=$(dialog --title "Downloading $game" --gauge "Attempting to download from: $game_url" 10 70 0 &)
+fi
 
-        echo "Attempting to download from: '$game_url'"
+# Check if the file already exists
+if [ -f "$destination" ]; then
+    echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
+    if [ "$use_dialog" = false ]; then
+        zenity --info --text="File '$filename' already exists. Skipping download." --width=300
+    else
+        dialog --msgbox "File '$filename' already exists. Skipping download." 20 70
+    fi
+    continue
+fi
 
-        # Check if the file already exists
-        if [ -f "$destination" ]; then
-            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-            continue
-        fi
-
-        rm "/tmp/$filename" 2>/dev/null
-        echo "Downloading $game..."
-
+# Remove any previous temporary files
+rm "/tmp/$filename" 2>/dev/null
+echo "Downloading $game..."
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
             echo "Error: The URL for $game is not valid (Scheme missing)."
@@ -165,9 +170,9 @@ while true; do
     else
         # Add a 3-second delay before returning to file selection
         if [ "$use_dialog" = false ]; then
-            zenity --info --text="No new files were downloaded. Returning to file selection in 3 seconds..." --width=300
+            zenity --info --text="No new files were downloaded. Press OK to return to selection." --width=300
         else
-            dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
+            dialog --msgbox "No new files were downloaded. Press OK to return to selection." 20 70
         fi
         sleep 3
     fi
