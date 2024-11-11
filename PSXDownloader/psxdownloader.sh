@@ -112,11 +112,10 @@ main() {
         cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
         selections=$("${cmd[@]}" "${dialog_items_sorted[@]}" 2>&1 >/dev/tty)
 
-        # Check if Cancel was pressed
+        # If Cancel is pressed, return to the category selection menu
         if [ $? -eq 1 ]; then
-            dialog --msgbox "Download cancelled." 6 30
-            refresh_game_list  # Refresh game list before exiting
-            exit
+            dialog --msgbox "Returning to category selection." 6 30
+            continue
         fi
 
         # If no files are selected, show a message and return to the menu
