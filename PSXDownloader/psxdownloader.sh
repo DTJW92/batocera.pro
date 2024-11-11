@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Check if Zenity is installed, and fall back to error message if not found
+check_zenity_installed() {
+    if ! command -v zenity &> /dev/null; then
+        echo "Zenity not found. Exiting script."
+        exit 1
+    else
+        echo "Zenity is installed."
+    fi
+}
+
+# Run the check for Zenity installation
+check_zenity_installed
+
+clear
+# Display notice about Batocera.Pro deprecation
+zenity --info --title="Notice" --text="Note: Batocera.Pro is deprecated and going archived. Support is no longer available." --width=300
+
+clear
+
 # Function to display animated title with colors (No Zenity equivalent for animation, keeping this terminal-based)
 animate_title() {
     local text="BATOCERA PSX DOWNLOADER"
@@ -64,6 +83,7 @@ while true; do
 
         # Check if the file already exists
         if [ -f "$destination" ]; then
+            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
             zenity --info --text="File '$filename' already exists. Skipping download." --width=300
             continue
         fi
@@ -72,11 +92,11 @@ while true; do
         rm "/tmp/$filename" 2>/dev/null
 
         # Update Zenity progress with the "Downloading" message
-        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --width=300 --height=100 &
+        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &
 
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
-            zenity --error --text="Error: The URL for $game is not valid (Scheme missing)." --width=300
+            echo "Error: The URL for $game is not valid (Scheme missing)."
             continue
         fi
 
@@ -89,12 +109,17 @@ while true; do
             chmod 777 "/tmp/$filename" 2>/dev/null
             mv "/tmp/$filename" "$destination"
             clear
-            zenity --info --text="$game installation complete." --width=300
+            echo -e "\n\n$game installation complete.\n\n"
 
             # Set the flag to true if a file was downloaded
             new_file_downloaded=true
         else
             # Print the wget error message
+            echo "Error: couldn't download game $game"
+            echo "wget exit code: $wget_exit_code"
+            echo "wget error message: $download_output"
+            
+            # Show error message via Zenity
             zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
         fi
     done
