@@ -9,18 +9,28 @@ mkdir -p "$DEST_DIR"
 
 # Function to fetch and filter .chd file list using improved grep pattern
 fetch_chd_list() {
-    # Fetch the page content, extract only .chd file links, and ensure they're valid
     curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
-# Function to handle the download and move process
-download_and_move() {
+# Function to handle the download process with a progress bar
+download_with_progress() {
     local file
     local skipped=0
     local downloaded=0
+    local total_files=0
 
-    for file in "$@"; do
-        local filename=$(basename "$file")
+    # Count the total number of files to download
+    total_files=$(echo "$@" | wc -w)
+
+    # Set up a temporary file to hold the progress info
+    tempfile=$(mktemp)
+
+    # Start the progress bar in dialog
+    dialog --title "Downloading Files" --gauge "Downloading .chd files..." 10 70 0 < "$tempfile" &
+
+    # Download and move files one by one
+    for i in $@; do
+        local filename=$(basename "$i")
         local dest_file="$DEST_DIR/$filename"
         
         # Skip if the file already exists
@@ -29,17 +39,30 @@ download_and_move() {
             continue
         fi
 
-        # Download the file directly with the -L flag to follow redirects
-        curl -LO "${BASE_URL}${file}"
-        
-        # Check if the file was successfully downloaded and is not an HTML document
+        # Download the file using curl with a progress bar
+        {
+            echo "XXX" # First line to initialize the progress bar
+            curl -L "$BASE_URL$i" -o "$filename" --progress-bar | while IFS= read -r line; do
+                # Update the progress bar every time progress is shown
+                echo $line
+            done
+        } > "$tempfile" &
+
+        # Wait for download to complete
+        wait $!
+
+        # If the file is a valid .chd file, move it to the destination directory
         if [[ -f "$filename" && "${filename: -4}" == ".chd" ]]; then
             mv "$filename" "$DEST_DIR"
             downloaded=$((downloaded + 1))
         else
-            dialog --msgbox "Error downloading file: $file or file is not a .chd" 6 40
+            dialog --msgbox "Error downloading file: $i or file is not a .chd" 6 40
             rm -f "$filename"  # Remove the incorrectly downloaded file
         fi
+
+        # Update progress in the dialog gauge
+        current_progress=$((downloaded * 100 / total_files))
+        echo $current_progress
     done
 
     # Return the status of download vs skip
@@ -88,7 +111,7 @@ main() {
         fi
 
         # Download and move selected files
-        result=$(download_and_move $selections)
+        result=$(download_with_progress $selections)
         IFS=',' read -r downloaded skipped <<< "$result"
 
         # If all files were skipped (already downloaded), return to file selection
