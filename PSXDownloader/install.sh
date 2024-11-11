@@ -37,7 +37,7 @@ fi
 curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/psxd/psxdownloader.sh
 
 # Download BatoceraPRO.sh to /userdata/roms/ports
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/psxd/PSXDownloader.sh
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/ports/PSXDownloader.sh
 
 # Download BatoceraPRO.sh.keys to /userdata/roms/ports
 wget  https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/bkeys.txt -o /userdata/roms/ports/PSXDownloader.sh.keys
