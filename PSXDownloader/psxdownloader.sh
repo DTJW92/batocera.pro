@@ -129,7 +129,7 @@ download_with_progress() {
 # Function to return to the main menu
 return_to_main_menu() {
     dialog --msgbox "Returning to the main menu..." 6 30
-    main  # Restart the main menu loop
+    show_main_menu  # Call the function that will display the main menu again
 }
 
 # Function to refresh the game list with cancellation option
@@ -145,7 +145,7 @@ refresh_game_list() {
 }
 
 # Main function to display the dialog interface
-main() {
+show_main_menu() {
     while true; do
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
@@ -175,4 +175,4 @@ main() {
 }
 
 # Run the main function
-main
+show_main_menu
