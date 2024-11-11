@@ -83,7 +83,6 @@ while true; do
 
         # Check if the file already exists
         if [ -f "$destination" ]; then
-            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
             zenity --info --text="File '$filename' already exists. Skipping download." --width=300
             continue
         fi
@@ -92,11 +91,11 @@ while true; do
         rm "/tmp/$filename" 2>/dev/null
 
         # Update Zenity progress with the "Downloading" message
-        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &
+        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --width=300 --height=100 &
 
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
-            echo "Error: The URL for $game is not valid (Scheme missing)."
+            zenity --error --text="Error: The URL for $game is not valid (Scheme missing)." --width=300
             continue
         fi
 
@@ -109,17 +108,12 @@ while true; do
             chmod 777 "/tmp/$filename" 2>/dev/null
             mv "/tmp/$filename" "$destination"
             clear
-            echo -e "\n\n$game installation complete.\n\n"
+            zenity --info --text="$game installation complete." --width=300
 
             # Set the flag to true if a file was downloaded
             new_file_downloaded=true
         else
             # Print the wget error message
-            echo "Error: couldn't download game $game"
-            echo "wget exit code: $wget_exit_code"
-            echo "wget error message: $download_output"
-            
-            # Show error message via Zenity
             zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
         fi
     done
