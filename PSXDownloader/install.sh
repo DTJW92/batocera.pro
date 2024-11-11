@@ -30,11 +30,11 @@ clear
 animate_title
 display_controls
 # Check if /userdata/system/pro does not exist and create it if necessary
-if [ ! -d "/userdata/system/psxd" ]; then
-    mkdir -p /userdata/system/psxd
+if [ ! -d "/userdata/system/pro" ]; then
+    mkdir -p /userdata/system/pro
 fi
 # Download pro.sh to /userdata/system/pro
-curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/psxd/psxdownloader.sh
+curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownoader/psxdownloader.sh -o /userdata/system/pro/psxdownloader.sh
 
 # Download BatoceraPRO.sh to /userdata/roms/ports
 curl -L https://github.com/DTJW92/batocera.pro/raw/main/PSXDownloader/PSXDownloader.sh -o /userdata/roms/ports/PSXDownloader.sh
