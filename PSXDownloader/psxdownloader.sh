@@ -1,13 +1,12 @@
 #!/bin/bash
 
-# Check if Zenity is installed, and fall back to dialog if not found
+# Check if Zenity is installed, and fall back to error message if not found
 check_zenity_installed() {
     if ! command -v zenity &> /dev/null; then
-        echo "Zenity not found. Falling back to dialog."
-        use_dialog=true
+        echo "Zenity not found. Exiting script."
+        exit 1
     else
         echo "Zenity is installed."
-        use_dialog=false
     fi
 }
 
@@ -15,11 +14,9 @@ check_zenity_installed() {
 check_zenity_installed
 
 clear
-if [ "$use_dialog" = false ]; then
-    zenity --info --title="Notice" --text="Note: Batocera.Pro is deprecated and going archived. Support is no longer available." --width=300
-else
-    dialog --msgbox "Note: Batocera.Pro is deprecated and going archived. Support is no longer available." 20 70
-fi
+# Display notice about Batocera.Pro deprecation
+zenity --info --title="Notice" --text="Note: Batocera.Pro is deprecated and going archived. Support is no longer available." --width=300
+
 clear
 
 # Function to display animated title with colors (No Zenity equivalent for animation, keeping this terminal-based)
@@ -41,15 +38,11 @@ url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/C
 game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
 
 if [ ${#game_list[@]} -eq 0 ]; then
-    if [ "$use_dialog" = false ]; then
-        zenity --error --text="No games found at $url" --width=300
-    else
-        dialog --msgbox "No games found at $url" 20 70
-    fi
+    zenity --error --text="No games found at $url" --width=300
     exit 1
 fi
 
-# Prepare array for dialog/zenity command, sorted by game name
+# Prepare array for checklist
 declare -A games
 for game in "${game_list[@]}"; do
     games["$game"]="$url$game"
@@ -66,21 +59,12 @@ new_file_downloaded=false
 
 # Main loop: Show file selection and download process
 while true; do
-    if [ "$use_dialog" = false ]; then
-        # Show Zenity checklist for game selection
-        selected_games=$(zenity --list --checklist --title="Select PSX games to install" --column="Select" --column="Game" "${game_choices[@]}" --width=500 --height=400 --multiple)
-    else
-        # Show Dialog checklist for game selection
-        selected_games=$(dialog --separate-output --checklist "Select PSX games to install:" 22 76 16 "${game_choices[@]}" 2>&1 >/dev/tty)
-    fi
+    # Show Zenity checklist for game selection
+    selected_games=$(zenity --list --checklist --title="Select PSX games to install" --column="Select" --column="Game" "${game_choices[@]}" --width=500 --height=400 --multiple)
 
     # Check if Cancel was pressed (Zenity returns an empty string on Cancel)
     if [ -z "$selected_games" ]; then
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="Installation cancelled." --width=300
-        else
-            dialog --msgbox "Installation cancelled." 20 70
-        fi
+        zenity --info --text="Installation cancelled." --width=300
         exit
     fi
 
@@ -94,34 +78,20 @@ while true; do
         filename=$(basename "$game")  # Extract the file name from the URL
         destination="/userdata/roms/psx/$filename"
 
-        # Start Zenity progress bar
-        if [ "$use_dialog" = false ]; then
-            progress_pid=$(zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &)
-        else
-            progress_pid=$(dialog --title "Downloading $game" --gauge "Downloading $game..." 10 70 0 &)
+        # Start Zenity progress bar with initial text (without progress value yet)
+        progress_pid=$(zenity --progress --title="Downloading $game" --text="Attempting to download from: $game_url" --percentage=0 --auto-close --width=300 --height=100 &)
+
+        # Check if the file already exists
+        if [ -f "$destination" ]; then
+            echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
+            zenity --info --text="File '$filename' already exists. Skipping download." --width=300
+            continue
         fi
 
-# Start Zenity progress bar with initial text (without progress value yet)
-if [ "$use_dialog" = false ]; then
-    progress_pid=$(zenity --progress --title="Downloading $game" --text="Attempting to download from: $game_url" --percentage=0 --auto-close --width=300 --height=100 &)
-else
-    progress_pid=$(dialog --title "Downloading $game" --gauge "Attempting to download from: $game_url" 10 70 0 &)
-fi
+        # Remove any previous temporary files
+        rm "/tmp/$filename" 2>/dev/null
+        echo "Downloading $game..."
 
-# Check if the file already exists
-if [ -f "$destination" ]; then
-    echo "File '$filename' already exists in /userdata/roms/psx/. Skipping download."
-    if [ "$use_dialog" = false ]; then
-        zenity --info --text="File '$filename' already exists. Skipping download." --width=300
-    else
-        dialog --msgbox "File '$filename' already exists. Skipping download." 20 70
-    fi
-    continue
-fi
-
-# Remove any previous temporary files
-rm "/tmp/$filename" 2>/dev/null
-echo "Downloading $game..."
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
             echo "Error: The URL for $game is not valid (Scheme missing)."
@@ -147,12 +117,8 @@ echo "Downloading $game..."
             echo "wget exit code: $wget_exit_code"
             echo "wget error message: $download_output"
             
-            # Show error message via Zenity or Dialog
-            if [ "$use_dialog" = false ]; then
-                zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
-            else
-                dialog --msgbox "Error: couldn't download game $game. \n\nError Message:\n$download_output" 20 70
-            fi
+            # Show error message via Zenity
+            zenity --error --text="Error: couldn't download game $game. \n\nError Message:\n$download_output" --width=300
         fi
     done
 
@@ -161,19 +127,11 @@ echo "Downloading $game..."
 
     # Exit the loop only if a new file was downloaded
     if $new_file_downloaded; then
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="Exiting after successful download." --width=300
-        else
-            dialog --msgbox "Exiting after successful download." 20 70
-        fi
+        zenity --info --text="Exiting after successful download." --width=300
         exit
     else
         # Add a 3-second delay before returning to file selection
-        if [ "$use_dialog" = false ]; then
-            zenity --info --text="No new files were downloaded. Press OK to return to selection." --width=300
-        else
-            dialog --msgbox "No new files were downloaded. Press OK to return to selection." 20 70
-        fi
+        zenity --info --text="No new files were downloaded. Press OK to return to selection." --width=300
         sleep 3
     fi
 done
