@@ -111,11 +111,18 @@ while true; do
             continue
         fi
 
-        # Run wget and capture output
-        download_output=$(wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=bar:force:noscroll -O "/tmp/$filename" "$game_url" 2>&1)
+        # Initialize Zenity progress bar
+        if [ "$use_dialog" = false ]; then
+            progress_pid=$(zenity --progress --title="Downloading $game" --text="Downloading..." --percentage=0 --auto-close --width=300 --height=100 &)
+        else
+            progress_pid=$(dialog --title "Downloading $game" --gauge "Downloading..." 10 70 0 &)
+        fi
+
+        # Run wget and capture output, update progress in Zenity dialog
+        download_output=$(wget --tries=10 --no-check-certificate --no-cache --no-cookies --progress=dot:mega -O "/tmp/$filename" "$game_url" 2>&1)
         wget_exit_code=$?
 
-        # Check if wget was successful
+        # If wget works and the file was downloaded, move it
         if [[ $wget_exit_code -eq 0 && -s "/tmp/$filename" ]]; then
             chmod 777 "/tmp/$filename" 2>/dev/null
             mv "/tmp/$filename" "$destination"
@@ -157,6 +164,5 @@ while true; do
         else
             dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
         fi
-        sleep 3
     fi
 done
