@@ -103,9 +103,9 @@ main() {
 
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        for title in $sorted_titles; do
+        while IFS= read -r title; do
             dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
-        done
+        done <<< "$sorted_titles"
 
         # Show dialog checklist to select files
         cmd=(dialog --separate-output --checklist "Select games to download" 22 76 16)
