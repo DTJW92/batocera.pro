@@ -75,7 +75,7 @@ main() {
         IFS=',' read -r downloaded skipped <<< "$result"
 
         # If all files were skipped (already downloaded), return to file selection
-        if [ "$downloaded" -eq 0 ]; then
+        if [ "$downloaded" -eq 0 ] && [ "$skipped" -gt 0 ]; then
             dialog --msgbox "All selected files are already downloaded. Returning to the file list." 6 30
             continue
         fi
