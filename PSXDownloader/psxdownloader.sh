@@ -4,7 +4,7 @@
 check_zenity_installed() {
     if ! command -v zenity &> /dev/null; then
         echo "Zenity not found. Exiting script."
-        continue
+        exit 1
     else
         echo "Zenity is installed."
     fi
