@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Check if Zenity is installed (if not, use Dialog)
+# Check if Zenity is installed, and fall back to dialog if not found
 check_zenity_installed() {
     if ! command -v zenity &> /dev/null; then
         echo "Zenity not found. Falling back to dialog."
@@ -22,7 +22,21 @@ else
 fi
 clear
 
-# Fetch list of game files from the URL
+# Function to display animated title with colors (No Zenity equivalent for animation, keeping this terminal-based)
+animate_title() {
+    local text="BATOCERA PSX DOWNLOADER"
+    local delay=0.03
+    local length=${#text}
+
+    echo -ne "\e[1;36m"  # Set color to cyan
+    for (( i=0; i<length; i++ )); do
+        echo -n "${text:i:1}"
+        sleep $delay
+    done
+    echo -e "\e[0m"  # Reset color
+}
+
+# Fetch list of game files from the URL and create a checklist
 url="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
 game_list=($(curl -s $url | grep -oP 'href="\K[^"]*' | grep -E "\.chd$"))
 
@@ -35,7 +49,7 @@ if [ ${#game_list[@]} -eq 0 ]; then
     exit 1
 fi
 
-# Prepare array for Zenity/Dialog command
+# Prepare array for dialog/zenity command, sorted by game name
 declare -A games
 for game in "${game_list[@]}"; do
     games["$game"]="$url$game"
@@ -46,6 +60,9 @@ game_choices=()
 for game in $(printf "%s\n" "${!games[@]}" | sort); do
     game_choices+=("$game" "" OFF)
 done
+
+# Flag to track if any new file was downloaded
+new_file_downloaded=false
 
 # Main loop: Show file selection and download process
 while true; do
@@ -66,6 +83,9 @@ while true; do
         fi
         exit
     fi
+
+    # Reset the flag for new file download
+    new_file_downloaded=false
 
     # Install selected games
     IFS='|'  # Zenity uses | to separate selected items
@@ -101,6 +121,9 @@ while true; do
             mv "/tmp/$filename" "$destination"
             clear
             echo -e "\n\n$game installation complete.\n\n"
+
+            # Set the flag to true if a file was downloaded
+            new_file_downloaded=true
         else
             # Print the wget error message
             echo "Error: couldn't download game $game"
@@ -119,11 +142,20 @@ while true; do
     # Reload ES after installations
     curl http://127.0.0.1:1234/reloadgames
 
-    # Exit the loop after installation
-    if [ "$use_dialog" = false ]; then
-        zenity --info --text="Exiting after successful download." --width=300
+    # Exit the loop only if a new file was downloaded
+    if $new_file_downloaded; then
+        if [ "$use_dialog" = false ]; then
+            zenity --info --text="Exiting after successful download." --width=300
+        else
+            dialog --msgbox "Exiting after successful download." 20 70
+        fi
+        exit
     else
-        dialog --msgbox "Exiting after successful download." 20 70
+        # Add a 3-second delay before returning to file selection
+        if [ "$use_dialog" = false ]; then
+            zenity --info --text="No new files were downloaded. Returning to file selection in 3 seconds..." --width=300
+        else
+            dialog --msgbox "No new files were downloaded. Returning to file selection in 3 seconds..." 20 70
+        fi
     fi
-    exit
 done
