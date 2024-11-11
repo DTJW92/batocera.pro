@@ -27,7 +27,7 @@ extract_game_titles() {
         title=$(echo "$title" | sed 's/([^)]*)//g')
         
         # Decode HTML entities
-        title=$(echo "$title" | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
+        title=$(echo "$title" | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g; s/%21/!/g; s/%27/'\''/g')
         
         # Map the cleaned title to the file
         title_to_file_map["$title"]="$file"
