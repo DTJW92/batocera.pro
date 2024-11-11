@@ -167,8 +167,8 @@ show_main_menu() {
             "28")  # #
                 display_filtered_list "^[0-9]"  # Show only games starting with a number
                 ;;
-            *)  # For any other selection (letters A-Z)
-                display_filtered_list "^$filter_selection"  # Show games starting with the selected letter
+            "2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11"|"12"|"13"|"14"|"15"|"16"|"17"|"18"|"19"|"20"|"21"|"22"|"23"|"24"|"25"|"26"|"27")  # A-Z letters
+                display_filtered_list "^${filter_selection}"  # Show games starting with the selected letter
                 ;;
         esac
     done
