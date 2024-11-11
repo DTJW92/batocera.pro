@@ -36,7 +36,7 @@ extract_game_titles() {
         title_to_file_map["$title"]="$file"
     done
 
-    # Sort the titles alphabetically and return them
+    # Sort the titles alphabetically while maintaining the full title per line
     sorted_titles=$(for title in "${!title_to_file_map[@]}"; do echo "$title"; done | sort)
     
     # Return the sorted titles
