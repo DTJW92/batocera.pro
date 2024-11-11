@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Open xterm and run the script inside it
+xterm -hold -e '
 # URL of the directory containing the .chd files
 BASE_URL="https://myrient.erista.me/files/Internet%20Archive/chadmaster/chd_psx_eur/CHD-PSX-EUR/"
 DEST_DIR="/userdata/roms/psx"
@@ -9,7 +11,7 @@ mkdir -p "$DEST_DIR"
 
 # Function to fetch and filter .chd file list
 fetch_chd_list() {
-    curl -s "$BASE_URL" | grep -oP 'href="([^"]+\.chd)"' | sed 's/href="\([^"]\+\)"/\1/' | sort
+    curl -s "$BASE_URL" | grep -oP "href=\"([^\"]+\.chd)\"" | sed "s/href=\"\([^\"]\+\)\"/\1/" | sort
 }
 
 # Display the file list with an option to filter by starting letter
@@ -84,3 +86,4 @@ main() {
 
 # Run the script
 main
+'
