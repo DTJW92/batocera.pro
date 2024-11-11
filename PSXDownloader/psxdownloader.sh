@@ -7,9 +7,19 @@ DEST_DIR="/userdata/roms/psx"
 # Create the destination directory if it doesn't exist
 mkdir -p "$DEST_DIR"
 
-# Function to fetch and filter .chd file list using improved grep pattern
+# Function to fetch and filter .chd file list
 fetch_chd_list() {
     curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
+}
+
+# Function to extract clean game names from file names
+extract_game_names() {
+    local files=("$@")
+    local game_names=()
+    for file in "${files[@]}"; do
+        game_names+=("$(basename "$file" .chd)")  # Strip .chd extension
+    done
+    echo "${game_names[@]}"
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -64,12 +74,13 @@ refresh_game_list() {
 main() {
     while true; do
         # Fetch the list of .chd files
-        files=$(fetch_chd_list)
+        files=($(fetch_chd_list))
+        game_names=($(extract_game_names "${files[@]}"))
 
-        # Prepare array for dialog command, sorted alphabetically
+        # Prepare array for dialog command, using game names for display
         dialog_items=()
-        for file in $files; do
-            dialog_items+=("$file" "" OFF)  # Default to unselected
+        for i in "${!files[@]}"; do
+            dialog_items+=("${files[i]}" "${game_names[i]}" OFF)  # Use game name without extension
         done
 
         # Show dialog checklist to select files
