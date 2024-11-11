@@ -12,16 +12,19 @@ fetch_chd_list() {
     curl -s "$BASE_URL" | grep -oP 'href="\K[^"]*' | grep -E "\.chd$" | sort
 }
 
-# Function to extract clean, decoded game names from file names
+# Function to extract clean, decoded game titles from file names
 extract_game_titles() {
     local files=("$@")
     local game_titles=()
+    declare -A title_to_file_map=()
     for file in "${files[@]}"; do
         # Strip the .chd extension and decode any HTML entities
         title=$(basename "$file" .chd | sed 's/%20/ /g' | sed 's/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&quot;/"/g; s/&#39;/'\''/g')
         game_titles+=("$title")
+        title_to_file_map["$title"]="$file"
     done
     echo "${game_titles[@]}"
+    declare -p title_to_file_map
 }
 
 # Function to download files with a progress bar displayed using dialog
@@ -77,12 +80,15 @@ main() {
     while true; do
         # Fetch the list of .chd files
         files=($(fetch_chd_list))
+        
+        # Extract game titles and map them to files
         game_titles=($(extract_game_titles "${files[@]}"))
+        eval "$(extract_game_titles "${files[@]}")"  # Evaluate to access title_to_file_map as an array
 
         # Prepare array for dialog command, using game titles for display
         dialog_items=()
-        for i in "${!files[@]}"; do
-            dialog_items+=("${files[i]}" "${game_titles[i]}" OFF)  # Use game title only, hide file name
+        for title in "${game_titles[@]}"; do
+            dialog_items+=("$title" "" OFF)  # Use game title only, hide file name
         done
 
         # Show dialog checklist to select files
@@ -102,8 +108,14 @@ main() {
             continue
         fi
 
+        # Convert selected game titles back to filenames using the map
+        selected_files=()
+        for title in $selections; do
+            selected_files+=("${title_to_file_map[$title]}")
+        done
+
         # Download and move selected files
-        download_with_progress $selections
+        download_with_progress "${selected_files[@]}"
 
         # Display download results
         dialog --msgbox "Download completed." 10 50
