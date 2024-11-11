@@ -4,7 +4,7 @@
 check_zenity_installed() {
     if ! command -v zenity &> /dev/null; then
         echo "Zenity not found. Exiting script."
-        exit 1
+        continue
     else
         echo "Zenity is installed."
     fi
@@ -90,9 +90,7 @@ while true; do
 
         # Remove any previous temporary files
         rm "/tmp/$filename" 2>/dev/null
-
-        # Update Zenity progress with the "Downloading" message
-        zenity --progress --title="Downloading $game" --text="Downloading $game..." --percentage=0 --auto-close --width=300 --height=100 &
+        echo "Downloading $game..."
 
         # Check if the URL is valid
         if [[ ! "$game_url" =~ ^https?:// ]]; then
@@ -134,5 +132,6 @@ while true; do
     else
         # Add a 3-second delay before returning to file selection
         zenity --info --text="No new files were downloaded. Press OK to return to selection." --width=300
+        sleep 3
     fi
 done
