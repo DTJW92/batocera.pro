@@ -97,7 +97,6 @@ else
     shm_size="1gb"
 fi
 
-# Step 6: Install Webtop
 echo "Installing Webtop..."
 
 distros=(alpine ubuntu fedora arch debian)
